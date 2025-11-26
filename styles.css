@@ -508,14 +508,14 @@ body {
   font-size: 20px;
 }
 
-/* Markdown Element Styles */
+/* Markdown Element Styles - using em for font scaling */
 .markdown-content h1 {
-  font-size: 36px;
-  margin-top: 32px;
-  margin-bottom: 20px;
+  font-size: 2.25em;
+  margin-top: 2em;
+  margin-bottom: 1.25em;
   font-weight: 700;
   border-bottom: 2px solid var(--border-color);
-  padding-bottom: 12px;
+  padding-bottom: 0.75em;
   letter-spacing: -0.5px;
   color: var(--text-primary);
 }
@@ -525,72 +525,72 @@ body {
 }
 
 .markdown-content h2 {
-  font-size: 28px;
-  margin-top: 32px;
-  margin-bottom: 16px;
+  font-size: 1.75em;
+  margin-top: 2em;
+  margin-bottom: 1em;
   font-weight: 700;
   letter-spacing: -0.3px;
   color: var(--text-primary);
 }
 
 .markdown-content h3 {
-  font-size: 22px;
-  margin-top: 24px;
-  margin-bottom: 12px;
+  font-size: 1.375em;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .markdown-content h4 {
-  font-size: 18px;
-  margin-top: 20px;
-  margin-bottom: 10px;
+  font-size: 1.125em;
+  margin-top: 1.25em;
+  margin-bottom: 0.625em;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .markdown-content h5,
 .markdown-content h6 {
-  font-size: 16px;
-  margin-top: 18px;
-  margin-bottom: 8px;
+  font-size: 1em;
+  margin-top: 1.125em;
+  margin-bottom: 0.5em;
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 .markdown-content p {
-  margin-bottom: 20px;
-  font-size: 16px;
+  margin-bottom: 1.25em;
+  font-size: 1em;
   line-height: 1.7;
 }
 
 .markdown-content ul,
 .markdown-content ol {
-  margin-bottom: 20px;
-  padding-left: 32px;
+  margin-bottom: 1.25em;
+  padding-left: 2em;
 }
 
 .markdown-content li {
-  margin-bottom: 8px;
+  margin-bottom: 0.5em;
   line-height: 1.7;
 }
 
 .markdown-content code {
   background-color: var(--bg-secondary);
-  padding: 3px 6px;
+  padding: 0.2em 0.4em;
   border-radius: 4px;
   font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
-  font-size: 14px;
+  font-size: 0.875em;
   color: var(--secondary-color);
   border: 1px solid var(--border-color);
 }
 
 .markdown-content pre {
   background-color: var(--bg-secondary);
-  padding: 20px;
+  padding: 1.25em;
   border-radius: 8px;
   overflow-x: auto;
-  margin-bottom: 20px;
+  margin-bottom: 1.25em;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
 }
@@ -600,21 +600,21 @@ body {
   padding: 0;
   color: var(--text-primary);
   border: none;
-  font-size: 14px;
+  font-size: 0.875em;
   line-height: 1.6;
 }
 
 .markdown-content blockquote {
   border-left: 4px solid var(--primary-color);
-  padding: 12px 20px;
-  margin: 20px 0;
+  padding: 0.75em 1.25em;
+  margin: 1.25em 0;
   background: var(--bg-secondary);
   border-radius: 0 8px 8px 0;
   color: var(--text-secondary);
 }
 
 .markdown-content blockquote p {
-  margin-bottom: 8px;
+  margin-bottom: 0.5em;
 }
 
 .markdown-content blockquote p:last-child {
@@ -636,7 +636,7 @@ body {
 .markdown-content img {
   max-width: 100%;
   height: auto;
-  margin: 24px 0;
+  margin: 1.5em 0;
   border-radius: 8px;
   box-shadow: var(--shadow-md);
 }
@@ -644,7 +644,7 @@ body {
 .markdown-content hr {
   border: none;
   border-top: 2px solid var(--border-color);
-  margin: 32px 0;
+  margin: 2em 0;
 }
 
 /* Table wrapper for horizontal scrolling */
@@ -792,4 +792,60 @@ body {
 .markdown-content,
 .welcome-screen {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* Recent Documents */
+.recent-docs-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 8px 4px 8px;
+  margin-bottom: 4px;
+}
+
+.recent-doc-item {
+  position: relative;
+}
+
+.recent-doc-item .tree-item-name {
+  padding-right: 24px;
+}
+
+.recent-doc-remove {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.recent-doc-item:hover .recent-doc-remove {
+  opacity: 1;
+}
+
+.recent-doc-remove:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.recent-doc-item.active .recent-doc-remove {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.recent-doc-item.active .recent-doc-remove:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
 }

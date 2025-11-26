@@ -13,6 +13,7 @@
   "build": {
     "appId": "com.markdown-viewer.app",
     "productName": "Markdown Viewer",
+    "artifactName": "${name}-${version}-${arch}.${ext}",
     "files": [
       "main.js",
       "preload.js",
@@ -26,9 +27,10 @@
       "icon": "build/icon.icns",
       "fileAssociations": [
         {
-          "ext": "md",
+          "ext": ["md", "markdown", "mdown", "mkd"],
           "name": "Markdown Document",
-          "role": "Viewer"
+          "role": "Viewer",
+          "icon": "build/icon.icns"
         }
       ]
     },
@@ -37,12 +39,21 @@
       "icon": "build/icon.ico",
       "fileAssociations": [
         {
-          "ext": "md",
+          "ext": ["md", "markdown", "mdown", "mkd"],
           "name": "Markdown Document",
           "description": "Markdown Document",
-          "role": "Viewer"
+          "role": "Viewer",
+          "icon": "build/icon.ico"
         }
       ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "include": "build/installer.nsh"
     },
     "linux": {
       "target": ["AppImage", "deb"],
@@ -50,7 +61,7 @@
       "icon": "icon.png",
       "fileAssociations": [
         {
-          "ext": "md",
+          "ext": ["md", "markdown", "mdown", "mkd"],
           "name": "Markdown Document",
           "mimeType": "text/markdown"
         }

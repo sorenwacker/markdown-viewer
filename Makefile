@@ -1,4 +1,4 @@
-.PHONY: help build clean install icons dmg
+.PHONY: help build clean install icons dmg associate
 
 # Default target
 help:
@@ -8,7 +8,8 @@ help:
 	@echo "  make icons     - Generate app icons from SVG"
 	@echo "  make build     - Build the Electron app for macOS"
 	@echo "  make dmg       - Build the DMG installer (alias for build)"
-	@echo "  make install   - Install the app to /Applications"
+	@echo "  make install   - Install the app to /Applications (prompts for file association)"
+	@echo "  make associate - Set .md file associations (requires duti)"
 	@echo "  make clean     - Remove build artifacts"
 	@echo "  make all       - Generate icons and build DMG"
 
@@ -29,15 +30,15 @@ icons:
 	@iconutil -c icns build/icon.iconset -o build/icon.icns
 	@magick icon.svg -define icon:auto-resize=256,128,96,64,48,32,16 build/icon.ico
 	@magick icon.svg -resize 1024x1024 -background none icon.png
-	@echo "✓ Icons generated successfully"
+	@echo "Icons generated successfully"
 
 # Build the macOS app
 build:
 	@echo "Building Markdown Viewer for macOS..."
 	@npm run build:mac
-	@echo "✓ Build complete!"
+	@echo "Build complete!"
 	@echo ""
-	@echo "DMG installer created at: dist/Markdown Viewer-1.0.0-arm64.dmg"
+	@echo "DMG installer created at: dist/markdown-viewer-1.0.0-arm64.dmg"
 
 # Alias for build
 dmg: build
@@ -46,21 +47,50 @@ dmg: build
 install:
 	@echo "Installing Markdown Viewer to /Applications..."
 	@cp -R "dist/mac-arm64/Markdown Viewer.app" "/Applications/Markdown Viewer.app"
-	@echo "✓ Installed successfully"
+	@echo "Installed successfully"
 	@echo ""
+	@echo "Refreshing Launch Services database..."
+	@/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user 2>/dev/null || true
+	@echo ""
+	@read -p "Associate .md files with Markdown Viewer? [y/N] " response; \
+	if [ "$$response" = "y" ] || [ "$$response" = "Y" ]; then \
+		echo "Setting file associations..."; \
+		if command -v duti >/dev/null 2>&1; then \
+			duti -s com.markdown-viewer.app .md all; \
+			duti -s com.markdown-viewer.app .markdown all; \
+			duti -s com.markdown-viewer.app .mdown all; \
+			duti -s com.markdown-viewer.app .mkd all; \
+			echo "File associations set"; \
+		else \
+			echo "Note: Install 'duti' with 'brew install duti' to set file associations"; \
+			echo "Then run: make associate"; \
+		fi \
+	else \
+		echo "Skipped file associations. Run 'make associate' later if needed."; \
+	fi
+
+# Set file associations (requires duti: brew install duti)
+associate:
 	@echo "Setting file associations..."
-	@duti -s com.markdown-viewer.app .md all 2>/dev/null || echo "Note: Install 'duti' with 'brew install duti' to set file associations automatically"
-	@duti -s com.markdown-viewer.app .markdown all 2>/dev/null || true
-	@echo "✓ File associations set"
+	@if command -v duti >/dev/null 2>&1; then \
+		duti -s com.markdown-viewer.app .md all; \
+		duti -s com.markdown-viewer.app .markdown all; \
+		duti -s com.markdown-viewer.app .mdown all; \
+		duti -s com.markdown-viewer.app .mkd all; \
+		echo "File associations set"; \
+	else \
+		echo "Error: duti is not installed. Run: brew install duti"; \
+		exit 1; \
+	fi
 
 # Clean build artifacts
 clean:
 	@echo "Cleaning build artifacts..."
 	@rm -rf dist
 	@rm -rf build/icon.iconset
-	@echo "✓ Clean complete"
+	@echo "Clean complete"
 
 # Build everything
 all: icons build
 	@echo ""
-	@echo "✓ All tasks complete!"
+	@echo "All tasks complete!"

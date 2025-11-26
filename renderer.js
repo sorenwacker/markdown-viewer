@@ -17,6 +17,7 @@ const folderPath = document.getElementById('folderPath');
 const viewModeToggle = document.getElementById('viewModeToggle');
 const fontIncreaseBtn = document.getElementById('fontIncreaseBtn');
 const fontDecreaseBtn = document.getElementById('fontDecreaseBtn');
+const reloadBtn = document.getElementById('reloadBtn');
 const contentWrapper = document.querySelector('.content-wrapper');
 
 // State
@@ -26,6 +27,122 @@ let expandedFolders = new Set();
 let currentFolderPath = null;
 let currentOutline = [];
 let fontSize = 'medium'; // small, medium, large, xlarge
+
+// Recent documents (max 15)
+const MAX_RECENT_DOCS = 15;
+
+function getRecentDocuments() {
+  const stored = localStorage.getItem('recentDocuments');
+  return stored ? JSON.parse(stored) : [];
+}
+
+function saveRecentDocuments(docs) {
+  localStorage.setItem('recentDocuments', JSON.stringify(docs));
+}
+
+function addToRecentDocuments(filePath, fileName) {
+  let recent = getRecentDocuments();
+
+  // Remove if already exists
+  recent = recent.filter(doc => doc.path !== filePath);
+
+  // Add to beginning
+  recent.unshift({ path: filePath, name: fileName });
+
+  // Limit to max
+  if (recent.length > MAX_RECENT_DOCS) {
+    recent = recent.slice(0, MAX_RECENT_DOCS);
+  }
+
+  saveRecentDocuments(recent);
+
+  // Update UI if no folder is open
+  if (!currentFolder) {
+    renderRecentDocuments();
+  }
+}
+
+function removeFromRecentDocuments(filePath) {
+  let recent = getRecentDocuments();
+  recent = recent.filter(doc => doc.path !== filePath);
+  saveRecentDocuments(recent);
+  renderRecentDocuments();
+}
+
+function renderRecentDocuments() {
+  const recent = getRecentDocuments();
+
+  if (recent.length === 0) {
+    treeContainer.innerHTML = `
+      <div class="tree-empty">
+        <p>No folder opened</p>
+        <p class="hint">Open a folder to browse files</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '<div class="recent-docs-header">Recent Documents</div>';
+  html += '<div class="tree-root">';
+
+  recent.forEach(doc => {
+    html += `
+      <div class="tree-item recent-doc-item" data-path="${doc.path}" data-type="recent" title="${doc.path}">
+        <span class="tree-item-icon">&#128196;</span>
+        <span class="tree-item-name">${doc.name}</span>
+        <button class="recent-doc-remove" data-path="${doc.path}" title="Remove from recent">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  treeContainer.innerHTML = html;
+
+  // Add click handlers for recent docs
+  const recentItems = treeContainer.querySelectorAll('.recent-doc-item');
+  recentItems.forEach(item => {
+    item.addEventListener('click', async (e) => {
+      // Ignore clicks on remove button
+      if (e.target.closest('.recent-doc-remove')) return;
+
+      const path = item.getAttribute('data-path');
+      currentFile = path;
+      await window.electronAPI.readFile(path);
+
+      // Update active state
+      recentItems.forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+
+  // Add click handlers for remove buttons
+  const removeButtons = treeContainer.querySelectorAll('.recent-doc-remove');
+  removeButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const path = btn.getAttribute('data-path');
+      removeFromRecentDocuments(path);
+    });
+  });
+}
+
+// Reload file
+async function handleReload() {
+  await window.electronAPI.reloadFile();
+}
+
+reloadBtn.addEventListener('click', handleReload);
+
+// Listen for file changes (auto-reload)
+window.electronAPI.onFileChanged((event, filePath) => {
+  // File was auto-reloaded, could show notification if needed
+  console.log('File changed and reloaded:', filePath);
+});
 
 // Dark mode
 const initDarkMode = () => {
@@ -415,6 +532,10 @@ window.electronAPI.onLoadMarkdown((event, data) => {
 
   // Update file info
   fileInfo.textContent = fileName;
+  currentFile = filePath;
+
+  // Show reload button
+  reloadBtn.style.display = 'flex';
 
   // Display the rendered HTML
   markdownContent.innerHTML = html;
@@ -429,6 +550,9 @@ window.electronAPI.onLoadMarkdown((event, data) => {
   // Render outline
   renderOutline(outline);
 
+  // Add to recent documents
+  addToRecentDocuments(filePath, fileName);
+
   // Update active state in tree if file is in current tree
   if (currentFolder) {
     const treeItems = treeContainer.querySelectorAll('.tree-item[data-type="file"]');
@@ -437,6 +561,12 @@ window.electronAPI.onLoadMarkdown((event, data) => {
         treeContainer.querySelectorAll('.tree-item').forEach(i => i.classList.remove('active'));
         item.classList.add('active');
       }
+    });
+  } else {
+    // Update active state for recent docs
+    const recentItems = treeContainer.querySelectorAll('.recent-doc-item');
+    recentItems.forEach(item => {
+      item.classList.toggle('active', item.getAttribute('data-path') === filePath);
     });
   }
 });
@@ -473,4 +603,14 @@ document.addEventListener('keydown', (e) => {
     toggleSidebar();
   }
 
+  // Cmd/Ctrl + R: Reload file
+  if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+    e.preventDefault();
+    if (currentFile) {
+      handleReload();
+    }
+  }
 });
+
+// Initialize recent documents display on startup
+renderRecentDocuments();

@@ -1,10 +1,13 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const { marked } = require('marked');
 
 let mainWindow;
 let fileToOpen = null;
+let currentWatcher = null;
+let currentFilePath = null;
 
 // Handle file opening on macOS
 app.on('open-file', (event, filePath) => {
@@ -51,16 +54,89 @@ function createWindow() {
   });
 }
 
-async function loadMarkdownFile(filePath) {
+// Watch a file for changes
+function watchFile(filePath) {
+  // Stop watching previous file
+  if (currentWatcher) {
+    currentWatcher.close();
+    currentWatcher = null;
+  }
+
+  currentFilePath = filePath;
+
+  // Set up new watcher with debounce
+  let debounceTimer = null;
+  try {
+    currentWatcher = fsSync.watch(filePath, (eventType) => {
+      if (eventType === 'change') {
+        // Debounce to avoid multiple reloads
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          loadMarkdownFile(filePath, false); // Don't re-setup watcher
+          if (mainWindow) {
+            mainWindow.webContents.send('file-changed', filePath);
+          }
+        }, 100);
+      }
+    });
+  } catch (error) {
+    console.error('Error watching file:', error);
+  }
+}
+
+// Generate slug from text for heading IDs
+function generateSlug(text) {
+  return text
+    .toLowerCase()
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .trim();
+}
+
+async function loadMarkdownFile(filePath, setupWatcher = true) {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
 
+    // Track heading IDs to handle duplicates
+    const headingIds = {};
+
+    // Custom renderer to add IDs to headings
+    const renderer = {
+      heading(text, level, raw) {
+        // Handle both old API (text, level, raw) and new API (object)
+        let headingText, headingLevel;
+
+        if (typeof text === 'object') {
+          // New marked v11+ API - token object
+          headingText = text.text || '';
+          headingLevel = text.depth || 1;
+        } else {
+          // Old API - separate arguments
+          headingText = text;
+          headingLevel = level;
+        }
+
+        let slug = generateSlug(headingText);
+
+        // Handle duplicate IDs
+        if (headingIds[slug]) {
+          headingIds[slug]++;
+          slug = `${slug}-${headingIds[slug]}`;
+        } else {
+          headingIds[slug] = 1;
+        }
+
+        return `<h${headingLevel} id="${slug}">${headingText}</h${headingLevel}>\n`;
+      }
+    };
+
     // Configure marked options
-    marked.setOptions({
+    marked.use({
       breaks: true,
       gfm: true,
-      headerIds: true,
-      mangle: false
+      renderer: renderer
     });
 
     // Parse markdown to HTML
@@ -78,6 +154,11 @@ async function loadMarkdownFile(filePath) {
       fileName: path.basename(filePath),
       outline: outline
     });
+
+    // Set up file watcher
+    if (setupWatcher) {
+      watchFile(filePath);
+    }
   } catch (error) {
     console.error('Error reading file:', error);
     mainWindow.webContents.send('load-error', error.message);
@@ -173,6 +254,15 @@ ipcMain.handle('navigate-folder', async (event, folderPath) => {
 ipcMain.handle('read-file', async (event, filePath) => {
   await loadMarkdownFile(filePath);
   return true;
+});
+
+// Handle reload current file request
+ipcMain.handle('reload-file', async () => {
+  if (currentFilePath) {
+    await loadMarkdownFile(currentFilePath);
+    return true;
+  }
+  return false;
 });
 
 // Handle export to PDF request
