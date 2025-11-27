@@ -23,11 +23,19 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "build/icon.icns",
       "fileAssociations": [
         {
-          "ext": ["md", "markdown", "mdown", "mkd"],
+          "ext": [
+            "md",
+            "markdown",
+            "mdown",
+            "mkd"
+          ],
           "name": "Markdown Document",
           "role": "Viewer",
           "icon": "build/icon.icns"
@@ -35,11 +43,19 @@
       ]
     },
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "build/icon.ico",
       "fileAssociations": [
         {
-          "ext": ["md", "markdown", "mdown", "mkd"],
+          "ext": [
+            "md",
+            "markdown",
+            "mdown",
+            "mkd"
+          ],
           "name": "Markdown Document",
           "description": "Markdown Document",
           "role": "Viewer",
@@ -56,12 +72,20 @@
       "include": "build/installer.nsh"
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "category": "Utility",
       "icon": "icon.png",
       "fileAssociations": [
         {
-          "ext": ["md", "markdown", "mdown", "mkd"],
+          "ext": [
+            "md",
+            "markdown",
+            "mdown",
+            "mkd"
+          ],
           "name": "Markdown Document",
           "mimeType": "text/markdown"
         }
@@ -76,7 +100,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^28.0.0",
+    "electron": "^39.2.4",
     "electron-builder": "^24.9.1"
   },
   "dependencies": {
