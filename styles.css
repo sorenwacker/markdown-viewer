@@ -807,17 +807,38 @@ body {
 
 .recent-doc-item {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px;
+}
+
+.recent-doc-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
 }
 
 .recent-doc-item .tree-item-name {
-  padding-right: 24px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recent-doc-path {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 3px;
 }
 
 .recent-doc-remove {
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
+  flex-shrink: 0;
   width: 20px;
   height: 20px;
   display: flex;
@@ -830,6 +851,7 @@ body {
   color: var(--text-tertiary);
   opacity: 0;
   transition: var(--transition);
+  margin-left: 4px;
 }
 
 .recent-doc-item:hover .recent-doc-remove {
@@ -848,4 +870,27 @@ body {
 .recent-doc-item.active .recent-doc-remove:hover {
   background: rgba(255, 255, 255, 0.2);
   color: white;
+}
+
+.recent-doc-item.active .recent-doc-path {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Mermaid Diagrams */
+.mermaid {
+  margin: 1.5em 0;
+  padding: 1em;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.dark-mode .mermaid {
+  background: var(--bg-tertiary);
 }
