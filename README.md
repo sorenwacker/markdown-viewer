@@ -5,8 +5,17 @@ A cross-platform Electron-based markdown viewer for Mac, Windows, and Linux.
 ## Features
 
 - Clean, distraction-free markdown viewing
+- Mermaid diagram support (ERD, flowcharts, sequence diagrams, etc.)
 - Syntax highlighting for code blocks
-- Support for GitHub Flavored Markdown
+- GitHub Flavored Markdown support
+- File browser with folder navigation
+- Document outline navigation
+- Recent documents list
+- Live file watching (auto-reload on changes)
+- Dark/light mode toggle
+- Adjustable font size
+- A4/full-width view modes
+- PDF export
 - File association with .md files
 - Cross-platform support (macOS, Windows, Linux)
 
@@ -47,6 +56,27 @@ npm run build:linux  # Linux
 - Drag and drop a .md file onto the app window
 - Double-click a .md file (after setting file associations)
 - Right-click a .md file and choose "Open with Markdown Viewer"
+
+### Keyboard Shortcuts
+
+- `Cmd/Ctrl + O` - Open file
+- `Cmd/Ctrl + Shift + O` - Open folder
+- `Cmd/Ctrl + B` - Toggle sidebar
+- `Cmd/Ctrl + R` - Reload current file
+
+### Mermaid Diagrams
+
+Mermaid diagrams are rendered automatically. Use fenced code blocks with the `mermaid` language identifier:
+
+````markdown
+```mermaid
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--|{ LINE-ITEM : contains
+```
+````
+
+Supported diagram types include flowcharts, sequence diagrams, ERD, class diagrams, state diagrams, and more.
 
 ### Setting as Default Application
 

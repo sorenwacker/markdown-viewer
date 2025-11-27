@@ -102,7 +102,7 @@ async function loadMarkdownFile(filePath, setupWatcher = true) {
     // Track heading IDs to handle duplicates
     const headingIds = {};
 
-    // Custom renderer to add IDs to headings
+    // Custom renderer to add IDs to headings and handle mermaid code blocks
     const renderer = {
       heading(text, level, raw) {
         // Handle both old API (text, level, raw) and new API (object)
@@ -129,6 +129,34 @@ async function loadMarkdownFile(filePath, setupWatcher = true) {
         }
 
         return `<h${headingLevel} id="${slug}">${headingText}</h${headingLevel}>\n`;
+      },
+      code(code, language) {
+        // Handle both old API (code, language) and new API (object)
+        let codeText, codeLang;
+
+        if (typeof code === 'object') {
+          // New marked v11+ API - token object
+          codeText = code.text || '';
+          codeLang = code.lang || '';
+        } else {
+          // Old API - separate arguments
+          codeText = code;
+          codeLang = language || '';
+        }
+
+        // Handle mermaid code blocks specially
+        if (codeLang === 'mermaid') {
+          return `<div class="mermaid">${codeText}</div>\n`;
+        }
+
+        // Default code block rendering
+        const langClass = codeLang ? ` class="language-${codeLang}"` : '';
+        const escaped = codeText
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+        return `<pre><code${langClass}>${escaped}</code></pre>\n`;
       }
     };
 

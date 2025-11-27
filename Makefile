@@ -38,7 +38,7 @@ build:
 	@npm run build:mac
 	@echo "Build complete!"
 	@echo ""
-	@echo "DMG installer created at: dist/markdown-viewer-1.0.0-arm64.dmg"
+	@echo "DMG installer created at: dist/markdown-viewer-$$(node -p "require('./package.json').version")-arm64.dmg"
 
 # Alias for build
 dmg: build

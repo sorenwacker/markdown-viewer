@@ -69,6 +69,14 @@ function removeFromRecentDocuments(filePath) {
   renderRecentDocuments();
 }
 
+// Get directory path without the filename, truncated from the beginning
+function getDirectoryPath(filePath, maxLength = 35) {
+  const lastSlash = filePath.lastIndexOf('/');
+  const dir = lastSlash > 0 ? filePath.substring(0, lastSlash) : filePath;
+  if (dir.length <= maxLength) return dir;
+  return '...' + dir.slice(-(maxLength - 3));
+}
+
 function renderRecentDocuments() {
   const recent = getRecentDocuments();
 
@@ -86,10 +94,13 @@ function renderRecentDocuments() {
   html += '<div class="tree-root">';
 
   recent.forEach(doc => {
+    const dirPath = getDirectoryPath(doc.path);
     html += `
-      <div class="tree-item recent-doc-item" data-path="${doc.path}" data-type="recent" title="${doc.path}">
-        <span class="tree-item-icon">&#128196;</span>
-        <span class="tree-item-name">${doc.name}</span>
+      <div class="tree-item recent-doc-item" data-path="${doc.path}" data-type="recent">
+        <div class="recent-doc-text">
+          <span class="tree-item-name">${doc.name}</span>
+          <span class="recent-doc-path" title="${doc.path}">${dirPath}</span>
+        </div>
         <button class="recent-doc-remove" data-path="${doc.path}" title="Remove from recent">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -453,6 +464,40 @@ function addTreeClickHandlers() {
   });
 }
 
+// Render mermaid diagrams
+async function renderMermaidDiagrams() {
+  if (typeof mermaid === 'undefined') {
+    console.warn('Mermaid not loaded');
+    return;
+  }
+
+  const mermaidDivs = markdownContent.querySelectorAll('.mermaid');
+  if (mermaidDivs.length === 0) return;
+
+  // Update mermaid theme based on dark mode
+  const isDarkMode = document.body.classList.contains('dark-mode');
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: isDarkMode ? 'dark' : 'default',
+    securityLevel: 'loose',
+    flowchart: {
+      useMaxWidth: true,
+      htmlLabels: true
+    },
+    er: {
+      useMaxWidth: true
+    }
+  });
+
+  try {
+    await mermaid.run({
+      nodes: mermaidDivs
+    });
+  } catch (error) {
+    console.error('Mermaid rendering error:', error);
+  }
+}
+
 // Setup table toggle buttons
 function setupTableToggles() {
   const toggleButtons = markdownContent.querySelectorAll('.table-toggle');
@@ -534,8 +579,6 @@ window.electronAPI.onLoadMarkdown((event, data) => {
   fileInfo.textContent = fileName;
   currentFile = filePath;
 
-  // Show reload button
-  reloadBtn.style.display = 'flex';
 
   // Display the rendered HTML
   markdownContent.innerHTML = html;
@@ -546,6 +589,9 @@ window.electronAPI.onLoadMarkdown((event, data) => {
 
   // Setup table toggle buttons
   setupTableToggles();
+
+  // Render mermaid diagrams
+  renderMermaidDiagrams();
 
   // Render outline
   renderOutline(outline);

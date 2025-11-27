@@ -1,6 +1,6 @@
 {
   "name": "markdown-viewer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A cross-platform Electron markdown viewer",
   "main": "main.js",
   "scripts": {
@@ -19,7 +19,8 @@
       "preload.js",
       "renderer.html",
       "styles.css",
-      "renderer.js"
+      "renderer.js",
+      "node_modules/mermaid/dist/mermaid.min.js"
     ],
     "mac": {
       "category": "public.app-category.productivity",
@@ -104,6 +105,7 @@
     "electron-builder": "^24.9.1"
   },
   "dependencies": {
-    "marked": "^11.0.0"
+    "marked": "^11.0.0",
+    "mermaid": "^11.12.1"
   }
 }
