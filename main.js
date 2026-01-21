@@ -406,6 +406,11 @@ ipcMain.handle('export-pdf', async (event, orientation) => {
   return { success: false };
 });
 
+// Handle opening external URLs
+ipcMain.handle('open-external', async (event, url) => {
+  await shell.openExternal(url);
+});
+
 // Build file tree recursively
 async function buildFileTree(dirPath, depth = 0, maxDepth = 3) {
   if (depth > maxDepth) return [];

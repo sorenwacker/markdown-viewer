@@ -11,5 +11,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   exportPdf: (orientation) => ipcRenderer.invoke('export-pdf', orientation),
   onLoadMarkdown: (callback) => ipcRenderer.on('load-markdown', callback),
   onLoadError: (callback) => ipcRenderer.on('load-error', callback),
-  onFileChanged: (callback) => ipcRenderer.on('file-changed', callback)
+  onFileChanged: (callback) => ipcRenderer.on('file-changed', callback),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url)
 });

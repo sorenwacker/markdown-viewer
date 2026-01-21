@@ -25,6 +25,13 @@ const searchCount = document.getElementById('searchCount');
 const searchPrev = document.getElementById('searchPrev');
 const searchNext = document.getElementById('searchNext');
 const searchClose = document.getElementById('searchClose');
+const supportLink = document.getElementById('supportLink');
+
+// Support link handler
+supportLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  window.electronAPI.openExternal('https://buymeacoffee.com/soerendip');
+});
 
 // State
 let currentFolder = null;
