@@ -132,6 +132,12 @@ npm run lint:fix      # Auto-fix issues
 
 Please ensure tests pass and linting is clean before submitting.
 
+## Support
+
+If you find this project useful, consider supporting its development:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat&logo=buy-me-a-coffee)](https://buymeacoffee.com/soerendip)
+
 ## License
 
 MIT
