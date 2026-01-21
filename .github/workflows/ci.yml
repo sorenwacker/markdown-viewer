@@ -34,9 +34,12 @@ jobs:
       - name: Install Playwright dependencies (Linux)
         if: runner.os == 'Linux'
         run: npx playwright install-deps
-      - run: npm test
-        env:
-          DISPLAY: ':99.0'
+      - name: Run tests (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum -- npm test
+      - name: Run tests (macOS/Windows)
+        if: runner.os != 'Linux'
+        run: npm test
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v4
