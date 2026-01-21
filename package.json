@@ -74,23 +74,12 @@
     },
     "linux": {
       "target": [
-        "AppImage",
-        "deb"
+        "deb",
+        "tar.gz"
       ],
       "category": "Utility",
-      "icon": "icon.png",
-      "fileAssociations": [
-        {
-          "ext": [
-            "md",
-            "markdown",
-            "mdown",
-            "mkd"
-          ],
-          "name": "Markdown Document",
-          "mimeType": "text/markdown"
-        }
-      ]
+      "icon": "build/icon.png",
+      "maintainer": "noreply@example.com"
     }
   },
   "keywords": [
@@ -98,7 +87,10 @@
     "viewer",
     "electron"
   ],
-  "author": "",
+  "author": {
+    "name": "Markdown Viewer",
+    "email": "noreply@example.com"
+  },
   "license": "MIT",
   "devDependencies": {
     "electron": "^39.2.4",
