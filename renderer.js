@@ -169,9 +169,8 @@ reloadBtn.addEventListener('click', handleReload);
 
 // Listen for file changes (auto-reload)
 let isAutoReload = false;
-window.electronAPI.onFileChanged((event, filePath) => {
+window.electronAPI.onFileChanged((_event, _filePath) => {
   isAutoReload = true;
-  console.log('File changed and reloaded:', filePath);
 });
 
 // Dark mode
