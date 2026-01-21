@@ -9,6 +9,7 @@ description: |
 base: core22
 confinement: strict
 grade: stable
+icon: snap/gui/icon.png
 
 apps:
   markdown-viewer:

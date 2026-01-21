@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Markdown Viewer
+Comment=A cross-platform markdown viewer
+Exec=markdown-viewer %U
+Icon=${SNAP}/meta/gui/icon.png
+Type=Application
+Categories=Utility;TextEditor;
+MimeType=text/markdown;text/x-markdown;
+Terminal=false
+StartupWMClass=Markdown Viewer
