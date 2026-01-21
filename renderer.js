@@ -30,8 +30,8 @@ const searchClose = document.getElementById('searchClose');
 let currentFolder = null;
 let currentFile = null;
 let expandedFolders = new Set();
-let currentFolderPath = null;
-let currentOutline = [];
+let _currentFolderPath = null;
+let _currentOutline = [];
 let fontSize = 'medium'; // small, medium, large, xlarge
 
 // Search state
@@ -313,7 +313,7 @@ async function handleOpenFolder() {
   const result = await window.electronAPI.openFolder();
   if (result.success) {
     currentFolder = result.path;
-    currentFolderPath = result.path;
+    _currentFolderPath = result.path;
     folderPath.textContent = result.path;
     folderPath.style.display = 'block';
     renderFileTree(result.tree, result.path);
@@ -325,7 +325,7 @@ async function navigateToFolder(path) {
   const result = await window.electronAPI.navigateFolder(path);
   if (result.success) {
     currentFolder = result.path;
-    currentFolderPath = result.path;
+    _currentFolderPath = result.path;
     folderPath.textContent = result.path;
     folderPath.style.display = 'block';
     expandedFolders.clear(); // Clear expanded state when navigating
@@ -543,7 +543,7 @@ function renderOutline(outline) {
     return;
   }
 
-  currentOutline = outline;
+  _currentOutline = outline;
   let outlineHtml = '';
 
   outline.forEach(item => {
@@ -590,7 +590,6 @@ window.electronAPI.onLoadMarkdown((event, data) => {
   // Update file info
   fileInfo.textContent = fileName;
   currentFile = filePath;
-
 
   // Preserve scroll position for auto-reload
   const scrollTop = contentWrapper.scrollTop;
@@ -724,7 +723,7 @@ function performSearch(query) {
       highlight.className = 'search-highlight';
       highlight.dataset.matchIndex = idx;
       range.surroundContents(highlight);
-    } catch (e) {
+    } catch (_e) {
       // Range may cross element boundaries, skip this match
     }
   });

@@ -104,7 +104,7 @@ async function loadMarkdownFile(filePath, setupWatcher = true) {
 
     // Custom renderer to add IDs to headings and handle mermaid code blocks
     const renderer = {
-      heading(text, level, raw) {
+      heading(text, level, _raw) {
         // Handle both old API (text, level, raw) and new API (object)
         let headingText, headingLevel;
 

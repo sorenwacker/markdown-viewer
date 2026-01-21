@@ -5,6 +5,10 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
@@ -79,22 +83,32 @@
       ],
       "category": "Utility",
       "icon": "build/icon.png",
-      "maintainer": "noreply@example.com"
+      "maintainer": "sorenwacker"
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sorenwacker/markdown-viewer.git"
+  },
+  "homepage": "https://github.com/sorenwacker/markdown-viewer#readme",
+  "bugs": {
+    "url": "https://github.com/sorenwacker/markdown-viewer/issues"
   },
   "keywords": [
     "markdown",
     "viewer",
-    "electron"
+    "electron",
+    "mermaid",
+    "cross-platform"
   ],
-  "author": {
-    "name": "Markdown Viewer",
-    "email": "noreply@example.com"
-  },
+  "author": "sorenwacker",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "electron": "^39.2.4",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.9.1",
+    "eslint": "^9.39.2",
+    "playwright": "^1.57.0"
   },
   "dependencies": {
     "marked": "^11.0.0",

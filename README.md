@@ -1,10 +1,13 @@
 # Markdown Viewer
 
-A cross-platform Electron-based markdown viewer for Mac, Windows, and Linux.
+[![CI](https://github.com/sorenwacker/markdown-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/sorenwacker/markdown-viewer/actions/workflows/ci.yml)
+
+A cross-platform Electron-based markdown viewer for macOS, Windows, and Linux.
 
 ## Features
 
 - Clean, distraction-free markdown viewing
+- In-document search (Cmd/Ctrl+F)
 - Mermaid diagram support (ERD, flowcharts, sequence diagrams, etc.)
 - Syntax highlighting for code blocks
 - GitHub Flavored Markdown support
@@ -15,11 +18,12 @@ A cross-platform Electron-based markdown viewer for Mac, Windows, and Linux.
 - Dark/light mode toggle
 - Adjustable font size
 - A4/full-width view modes
-- PDF export
 - File association with .md files
 - Cross-platform support (macOS, Windows, Linux)
 
 ## Installation
+
+Download the latest release from the [Releases](https://github.com/sorenwacker/markdown-viewer/releases) page.
 
 ### From Source
 
@@ -28,7 +32,6 @@ A cross-platform Electron-based markdown viewer for Mac, Windows, and Linux.
    ```bash
    npm install
    ```
-
 3. Run the app:
    ```bash
    npm start
@@ -59,10 +62,16 @@ npm run build:linux  # Linux
 
 ### Keyboard Shortcuts
 
-- `Cmd/Ctrl + O` - Open file
-- `Cmd/Ctrl + Shift + O` - Open folder
-- `Cmd/Ctrl + B` - Toggle sidebar
-- `Cmd/Ctrl + R` - Reload current file
+| Shortcut | Action |
+|----------|--------|
+| `Cmd/Ctrl + F` | Search in document |
+| `Cmd/Ctrl + O` | Open file |
+| `Cmd/Ctrl + Shift + O` | Open folder |
+| `Cmd/Ctrl + B` | Toggle sidebar |
+| `Cmd/Ctrl + R` | Reload current file |
+| `Enter` | Next search result |
+| `Shift + Enter` | Previous search result |
+| `Escape` | Close search |
 
 ### Mermaid Diagrams
 
@@ -96,6 +105,32 @@ Supported diagram types include flowcharts, sequence diagrams, ERD, class diagra
 1. Right-click any .md file
 2. Select "Properties" or "Open With"
 3. Choose "Markdown Viewer" as the default application
+
+## Development
+
+### Running Tests
+
+```bash
+npm test              # Run tests
+npm run test:headed   # Run tests with visible browser
+```
+
+### Linting
+
+```bash
+npm run lint          # Check for issues
+npm run lint:fix      # Auto-fix issues
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/new-feature`)
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
+
+Please ensure tests pass and linting is clean before submitting.
 
 ## License
 

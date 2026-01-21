@@ -1,0 +1,41 @@
+name: markdown-viewer
+version: '1.1.0'
+summary: A cross-platform markdown viewer
+description: |
+  A beautiful way to read and navigate your markdown files.
+  Features include in-document search, outline navigation,
+  mermaid diagram support, dark mode, and file watching.
+
+base: core22
+confinement: strict
+grade: stable
+
+apps:
+  markdown-viewer:
+    command: markdown-viewer
+    desktop: usr/share/applications/markdown-viewer.desktop
+    extensions: [gnome]
+    plugs:
+      - home
+      - removable-media
+      - network
+
+parts:
+  markdown-viewer:
+    plugin: dump
+    source: .
+    build-packages:
+      - npm
+      - nodejs
+    override-build: |
+      npm install
+      npx electron-builder --linux dir
+      cp -r dist/linux-*-unpacked/* $SNAPCRAFT_PART_INSTALL/
+    stage-packages:
+      - libgtk-3-0
+      - libnotify4
+      - libnss3
+      - libxss1
+      - libxtst6
+      - xdg-utils
+      - libsecret-1-0

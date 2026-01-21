@@ -8,3 +8,4 @@ build/icon.iconset/
 *.exe
 *.AppImage
 *.deb
+test-results/
