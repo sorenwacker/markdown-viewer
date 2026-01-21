@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,15 +31,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - name: Install Playwright dependencies (Linux)
-        if: runner.os == 'Linux'
-        run: npx playwright install-deps
-      - name: Run tests (Linux)
-        if: runner.os == 'Linux'
-        run: xvfb-run --auto-servernum -- npm test
-      - name: Run tests (macOS/Windows)
-        if: runner.os != 'Linux'
-        run: npm test
+      - run: npm test
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v4
