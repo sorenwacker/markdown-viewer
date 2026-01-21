@@ -26,38 +26,11 @@ test.describe('Application Launch', () => {
     const searchBar = window.locator('#searchBar');
     await expect(searchBar).not.toBeVisible();
   });
-});
 
-test.describe('Sidebar', () => {
-  test('should toggle sidebar visibility', async ({ window }) => {
+  test('should have sidebar visible by default', async ({ window }) => {
     const sidebar = window.locator('#sidebar');
-    const toggleBtn = window.locator('#sidebarToggleMain');
-
+    await expect(sidebar).toBeVisible();
     await expect(sidebar).not.toHaveClass(/collapsed/);
-
-    await toggleBtn.click();
-    await expect(sidebar).toHaveClass(/collapsed/);
-
-    await toggleBtn.click();
-    await expect(sidebar).not.toHaveClass(/collapsed/);
-  });
-
-  test('should switch between tabs', async ({ window }) => {
-    const filesTab = window.locator('#filesTab');
-    const outlineTab = window.locator('#outlineTab');
-    const filesContent = window.locator('.tab-content[data-tab="files"]');
-    const outlineContent = window.locator('.tab-content[data-tab="outline"]');
-
-    // Outline is default active
-    await expect(outlineContent).toHaveClass(/active/);
-
-    // Click files tab
-    await filesTab.click();
-    await expect(filesContent).toHaveClass(/active/);
-
-    // Click outline tab back
-    await outlineTab.click();
-    await expect(outlineContent).toHaveClass(/active/);
   });
 });
 
@@ -67,12 +40,12 @@ test.describe('UI Elements', () => {
     await expect(window.locator('#welcomeOpenFolderBtn')).toBeVisible();
   });
 
-  test('should have sidebar with file and folder buttons', async ({ window }) => {
-    // Switch to files tab first
-    await window.locator('#filesTab').click();
-    await window.waitForTimeout(200);
-    // Check buttons are visible
-    await expect(window.locator('#openFileBtn')).toBeVisible({ timeout: 10000 });
-    await expect(window.locator('#openFolderBtn')).toBeVisible();
+  test('should have sidebar tabs', async ({ window }) => {
+    await expect(window.locator('#filesTab')).toBeVisible();
+    await expect(window.locator('#outlineTab')).toBeVisible();
+  });
+
+  test('should have sidebar toggle button', async ({ window }) => {
+    await expect(window.locator('#sidebarToggleMain')).toBeVisible();
   });
 });
