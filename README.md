@@ -1,6 +1,12 @@
-# Markdown Viewer
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Markdown Viewer logo" width="160">
+</p>
 
-[![CI](https://github.com/sorenwacker/markdown-viewer/actions/workflows/ci.yml/badge.svg)](https://github.com/sorenwacker/markdown-viewer/actions/workflows/ci.yml)
+<h1 align="center">Markdown Viewer</h1>
+
+<p align="center">
+  <a href="https://github.com/sorenwacker/markdown-viewer/actions/workflows/ci.yml"><img src="https://github.com/sorenwacker/markdown-viewer/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+</p>
 
 A cross-platform Electron-based markdown viewer for macOS, Windows, and Linux.
 
