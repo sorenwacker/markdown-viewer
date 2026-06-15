@@ -17,19 +17,25 @@ help:
 icons:
 	@echo "Generating app icons..."
 	@mkdir -p build/icon.iconset
-	@magick icon.svg -resize 16x16 build/icon.iconset/icon_16x16.png
-	@magick icon.svg -resize 32x32 build/icon.iconset/icon_16x16@2x.png
-	@magick icon.svg -resize 32x32 build/icon.iconset/icon_32x32.png
-	@magick icon.svg -resize 64x64 build/icon.iconset/icon_32x32@2x.png
-	@magick icon.svg -resize 128x128 build/icon.iconset/icon_128x128.png
-	@magick icon.svg -resize 256x256 build/icon.iconset/icon_128x128@2x.png
-	@magick icon.svg -resize 256x256 build/icon.iconset/icon_256x256.png
-	@magick icon.svg -resize 512x512 build/icon.iconset/icon_256x256@2x.png
-	@magick icon.svg -resize 512x512 build/icon.iconset/icon_512x512.png
-	@magick icon.svg -resize 1024x1024 build/icon.iconset/icon_512x512@2x.png
+	@# rsvg-convert (librsvg) is used instead of magick because the icon relies on
+	@# gradients and feGaussianBlur glow filters that magick's SVG engine drops.
+	@rsvg-convert -w 16   -h 16   icon.svg -o build/icon.iconset/icon_16x16.png
+	@rsvg-convert -w 32   -h 32   icon.svg -o build/icon.iconset/icon_16x16@2x.png
+	@rsvg-convert -w 32   -h 32   icon.svg -o build/icon.iconset/icon_32x32.png
+	@rsvg-convert -w 64   -h 64   icon.svg -o build/icon.iconset/icon_32x32@2x.png
+	@rsvg-convert -w 128  -h 128  icon.svg -o build/icon.iconset/icon_128x128.png
+	@rsvg-convert -w 256  -h 256  icon.svg -o build/icon.iconset/icon_128x128@2x.png
+	@rsvg-convert -w 256  -h 256  icon.svg -o build/icon.iconset/icon_256x256.png
+	@rsvg-convert -w 512  -h 512  icon.svg -o build/icon.iconset/icon_256x256@2x.png
+	@rsvg-convert -w 512  -h 512  icon.svg -o build/icon.iconset/icon_512x512.png
+	@rsvg-convert -w 1024 -h 1024 icon.svg -o build/icon.iconset/icon_512x512@2x.png
 	@iconutil -c icns build/icon.iconset -o build/icon.icns
-	@magick icon.svg -define icon:auto-resize=256,128,96,64,48,32,16 build/icon.ico
-	@magick icon.svg -resize 1024x1024 -background none icon.png
+	@for s in 16 32 48 64 128 256; do rsvg-convert -w $$s -h $$s icon.svg -o /tmp/mv_ico_$$s.png; done
+	@magick /tmp/mv_ico_16.png /tmp/mv_ico_32.png /tmp/mv_ico_48.png /tmp/mv_ico_64.png /tmp/mv_ico_128.png /tmp/mv_ico_256.png build/icon.ico
+	@rm -f /tmp/mv_ico_*.png
+	@rsvg-convert -w 512  -h 512  icon.svg -o build/icon.png
+	@rsvg-convert -w 1024 -h 1024 icon.svg -o icon.png
+	@rsvg-convert -w 256  -h 256  icon.svg -o icon-256.png
 	@echo "Icons generated successfully"
 
 # Build the macOS app
