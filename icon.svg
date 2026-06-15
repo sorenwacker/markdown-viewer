@@ -1,21 +1,5 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Cyan glow -->
-    <filter id="glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="7" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <!-- Magenta glow -->
-    <filter id="glow-magenta" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="9" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
     <!-- Edge glow for the M strokes -->
     <filter id="glow-edge" x="-50%" y="-50%" width="200%" height="200%">
       <feGaussianBlur stdDeviation="9" result="blur"/>
@@ -24,10 +8,10 @@
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
-    <!-- Cyan to magenta gradient across the M (nodus palette) -->
+    <!-- Cyan -> cyan-blue -> magenta gradient across the M (nodus palette) -->
     <linearGradient id="m-grad" x1="0" y1="0" x2="512" y2="0" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#00ffcc"/>
-      <stop offset="45%" stop-color="#00ccff"/>
+      <stop offset="50%" stop-color="#00ccff"/>
       <stop offset="100%" stop-color="#ff00ff"/>
     </linearGradient>
   </defs>
@@ -45,27 +29,8 @@
     <line x1="0" y1="384" x2="512" y2="384"/>
   </g>
 
-  <!-- The M rendered as a glowing node-graph: edges between its vertices -->
-  <path d="M118 392 L118 120 L256 300 L394 120 L394 392"
-        fill="none" stroke="url(#m-grad)" stroke-width="30"
+  <!-- The M, drawn in the three main nodus colors -->
+  <path d="M104 400 L104 112 L256 296 L408 112 L408 400"
+        fill="none" stroke="url(#m-grad)" stroke-width="44"
         stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-edge)"/>
-
-  <!-- Vertex nodes -->
-  <g filter="url(#glow-cyan)">
-    <circle cx="118" cy="392" r="30" fill="#0a0a12" stroke="#00ffcc" stroke-width="9"/>
-    <circle cx="118" cy="120" r="30" fill="#0a0a12" stroke="#00ffcc" stroke-width="9"/>
-    <circle cx="394" cy="120" r="30" fill="#0a0a12" stroke="#00ccff" stroke-width="9"/>
-  </g>
-  <g filter="url(#glow-magenta)">
-    <circle cx="394" cy="392" r="30" fill="#0a0a12" stroke="#ff00ff" stroke-width="9"/>
-    <!-- Center vertex (the M's valley) as the main node -->
-    <circle cx="256" cy="300" r="40" fill="#0a0a12" stroke="#ff00ff" stroke-width="12"/>
-    <circle cx="256" cy="300" r="18" fill="#ff00ff" fill-opacity="0.85"/>
-  </g>
-
-  <!-- Inner node highlights -->
-  <circle cx="118" cy="392" r="14" fill="#00ffcc" fill-opacity="0.75"/>
-  <circle cx="118" cy="120" r="14" fill="#00ffcc" fill-opacity="0.75"/>
-  <circle cx="394" cy="120" r="14" fill="#00ccff" fill-opacity="0.75"/>
-  <circle cx="394" cy="392" r="14" fill="#ff00ff" fill-opacity="0.75"/>
 </svg>
