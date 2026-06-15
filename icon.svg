@@ -8,12 +8,6 @@
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
-    <!-- Cyan -> cyan-blue -> magenta gradient across the M (nodus palette) -->
-    <linearGradient id="m-grad" x1="0" y1="0" x2="512" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#00ffcc"/>
-      <stop offset="50%" stop-color="#00ccff"/>
-      <stop offset="100%" stop-color="#ff00ff"/>
-    </linearGradient>
   </defs>
 
   <!-- Dark background -->
@@ -29,8 +23,11 @@
     <line x1="0" y1="384" x2="512" y2="384"/>
   </g>
 
-  <!-- The M, drawn in the three main nodus colors -->
-  <path d="M104 400 L104 112 L256 296 L408 112 L408 400"
-        fill="none" stroke="url(#m-grad)" stroke-width="44"
-        stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-edge)"/>
+  <!-- The M, drawn so each of the three nodus colors is clearly present:
+       cyan left leg, cyan-blue center chevron, magenta right leg. -->
+  <g fill="none" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-edge)">
+    <path d="M104 400 L104 112" stroke="#00ffcc"/>
+    <path d="M104 112 L256 296 L408 112" stroke="#00ccff"/>
+    <path d="M408 112 L408 400" stroke="#ff00ff"/>
+  </g>
 </svg>
