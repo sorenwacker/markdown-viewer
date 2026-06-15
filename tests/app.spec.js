@@ -22,11 +22,6 @@ test.describe('Application Launch', () => {
     await expect(window.locator('#darkModeToggle')).toBeVisible();
   });
 
-  test('should have search bar hidden by default', async ({ window }) => {
-    const searchBar = window.locator('#searchBar');
-    await expect(searchBar).not.toBeVisible();
-  });
-
   test('should have sidebar visible by default', async ({ window }) => {
     const sidebar = window.locator('#sidebar');
     await expect(sidebar).toBeVisible();

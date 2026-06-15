@@ -26,6 +26,37 @@ const searchPrev = document.getElementById('searchPrev');
 const searchNext = document.getElementById('searchNext');
 const searchClose = document.getElementById('searchClose');
 const supportLink = document.getElementById('supportLink');
+const tabBar = document.getElementById('tabBar');
+const tabBarContent = document.getElementById('tabBarContent');
+
+// Escape text before interpolating it into an innerHTML template string, so
+// file names/paths containing HTML metacharacters cannot break markup or inject
+// nodes.
+function escapeHtml(text) {
+  if (text == null) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Sanitize rendered markdown HTML before inserting it into the DOM. The HTML
+// comes from marked (no built-in sanitizer) and may contain raw HTML from an
+// untrusted markdown file. DOMPurify is loaded as a vendored script in
+// renderer.html.
+//
+// The default DOMPurify URI allow-list permits http(s), data: (on images), and
+// relative URLs but not file:. This viewer rewrites relative image sources to
+// absolute file:// URLs (see resolveImageSrc in main.js), so file: is added to
+// the allow-list to let local embedded images load.
+const ALLOWED_URI_REGEXP =
+  /^(?:(?:(?:f|ht)tps?|file|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
+
+function sanitizeHtml(html) {
+  return window.DOMPurify.sanitize(html, { ALLOWED_URI_REGEXP });
+}
 
 // Support link handler
 supportLink.addEventListener('click', (e) => {
@@ -37,13 +68,279 @@ supportLink.addEventListener('click', (e) => {
 let currentFolder = null;
 let currentFile = null;
 let expandedFolders = new Set();
-let _currentFolderPath = null;
-let _currentOutline = [];
 let fontSize = 'medium'; // small, medium, large, xlarge
 
 // Search state
 let searchMatches = [];
 let currentMatchIndex = -1;
+
+// Tab manager state
+const tabManager = {
+  tabs: new Map(), // Map<tabId, tabData>
+  activeTabId: null,
+  tabOrder: [], // Array of tabIds in display order
+  nextTabId: 1
+};
+
+// Tab object structure:
+// { id, filePath, fileName, html, outline, scrollPosition }
+
+// Generate unique tab ID
+function generateTabId() {
+  return `tab-${tabManager.nextTabId++}`;
+}
+
+// Find tab by file path
+function findTabByPath(filePath) {
+  for (const [tabId, tab] of tabManager.tabs) {
+    if (tab.filePath === filePath) {
+      return tabId;
+    }
+  }
+  return null;
+}
+
+// Create a new tab
+async function createTab(filePath, data = null) {
+  // Check if tab already exists for this file
+  const existingTabId = findTabByPath(filePath);
+  if (existingTabId) {
+    switchToTab(existingTabId);
+    return existingTabId;
+  }
+
+  // If no data provided, fetch it
+  if (!data) {
+    const result = await window.electronAPI.openFileInTab(filePath);
+    if (!result.success) {
+      console.error('Failed to open file in tab:', result.error);
+      return null;
+    }
+    data = result;
+  }
+
+  const tabId = generateTabId();
+  const tab = {
+    id: tabId,
+    filePath: data.filePath,
+    fileName: data.fileName,
+    html: data.html,
+    outline: data.outline,
+    scrollPosition: 0
+  };
+
+  tabManager.tabs.set(tabId, tab);
+  tabManager.tabOrder.push(tabId);
+
+  renderTabBar();
+  switchToTab(tabId);
+
+  return tabId;
+}
+
+// Switch to a tab
+function switchToTab(tabId) {
+  const tab = tabManager.tabs.get(tabId);
+  if (!tab) return;
+
+  // Save scroll position of current tab
+  if (tabManager.activeTabId) {
+    const currentTab = tabManager.tabs.get(tabManager.activeTabId);
+    if (currentTab) {
+      currentTab.scrollPosition = contentWrapper.scrollTop;
+    }
+  }
+
+  tabManager.activeTabId = tabId;
+  currentFile = tab.filePath;
+
+  // Update UI
+  welcomeScreen.style.display = 'none';
+  markdownContent.style.display = 'block';
+  markdownContent.innerHTML = sanitizeHtml(tab.html);
+  fileInfo.textContent = tab.fileName;
+
+  // Restore scroll position
+  contentWrapper.scrollTop = tab.scrollPosition;
+
+  // Setup post-render elements
+  setupTableToggles();
+  renderMermaidDiagrams();
+  renderOutline(tab.outline);
+  setupLinkInterception();
+
+  // Update tab bar active state
+  renderTabBar();
+
+  // Update active state in file tree
+  updateTreeActiveState(tab.filePath);
+}
+
+// Close a tab
+async function closeTab(tabId) {
+  const tab = tabManager.tabs.get(tabId);
+  if (!tab) return;
+
+  // Notify main process to stop watching this file
+  await window.electronAPI.closeTab(tab.filePath);
+
+  // Remove tab from state
+  tabManager.tabs.delete(tabId);
+  const orderIndex = tabManager.tabOrder.indexOf(tabId);
+  if (orderIndex > -1) {
+    tabManager.tabOrder.splice(orderIndex, 1);
+  }
+
+  // If this was the active tab, switch to another
+  if (tabManager.activeTabId === tabId) {
+    if (tabManager.tabOrder.length > 0) {
+      // Switch to the previous tab, or the first one if we closed the first
+      const newIndex = Math.max(0, orderIndex - 1);
+      switchToTab(tabManager.tabOrder[newIndex]);
+    } else {
+      // No more tabs, show welcome screen
+      tabManager.activeTabId = null;
+      currentFile = null;
+      welcomeScreen.style.display = 'flex';
+      markdownContent.style.display = 'none';
+      fileInfo.textContent = 'Markdown Viewer';
+      outlineContainer.innerHTML = `
+        <div class="tree-empty">
+          <p>No file opened</p>
+          <p class="hint">Open a file to see its outline</p>
+        </div>
+      `;
+    }
+  }
+
+  renderTabBar();
+}
+
+// Render the tab bar
+function renderTabBar() {
+  // Hide tab bar if 0 or 1 tabs
+  if (tabManager.tabOrder.length <= 1) {
+    tabBar.style.display = 'none';
+    return;
+  }
+
+  tabBar.style.display = 'flex';
+
+  const html = tabManager.tabOrder.map(tabId => {
+    const tab = tabManager.tabs.get(tabId);
+    const isActive = tabId === tabManager.activeTabId;
+    return `
+      <div class="tab-item${isActive ? ' active' : ''}" data-tab-id="${tabId}" title="${escapeHtml(tab.filePath)}">
+        <span class="tab-item-name">${escapeHtml(tab.fileName)}</span>
+        <button class="tab-item-close" data-tab-id="${tabId}" title="Close tab">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  tabBarContent.innerHTML = html;
+
+  // Add event listeners
+  const tabItems = tabBarContent.querySelectorAll('.tab-item');
+  tabItems.forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (e.target.closest('.tab-item-close')) return;
+      const tabId = item.dataset.tabId;
+      switchToTab(tabId);
+    });
+  });
+
+  const closeButtons = tabBarContent.querySelectorAll('.tab-item-close');
+  closeButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tabId = btn.dataset.tabId;
+      closeTab(tabId);
+    });
+  });
+}
+
+// Update tree active state for a file path
+function updateTreeActiveState(filePath) {
+  if (currentFolder) {
+    const treeItems = treeContainer.querySelectorAll('.tree-item[data-type="file"]');
+    treeItems.forEach(item => {
+      item.classList.toggle('active', item.getAttribute('data-path') === filePath);
+    });
+  } else {
+    // Update active state for recent docs
+    const recentItems = treeContainer.querySelectorAll('.recent-doc-item');
+    recentItems.forEach(item => {
+      item.classList.toggle('active', item.getAttribute('data-path') === filePath);
+    });
+  }
+}
+
+// Setup link interception on markdown content
+function setupLinkInterception() {
+  const links = markdownContent.querySelectorAll('a');
+  links.forEach(link => {
+    link.addEventListener('click', handleLinkClick);
+  });
+}
+
+// Handle link clicks
+async function handleLinkClick(e) {
+  const href = e.currentTarget.getAttribute('href');
+  if (!href) return;
+
+  // Handle anchor links (scroll within document)
+  if (href.startsWith('#')) {
+    e.preventDefault();
+    const targetId = href.slice(1);
+    const targetElement = document.getElementById(targetId);
+    if (targetElement) {
+      const offsetTop = targetElement.offsetTop - 80;
+      contentWrapper.scrollTo({
+        top: offsetTop,
+        behavior: 'smooth'
+      });
+    }
+    return;
+  }
+
+  // Handle external URLs
+  if (href.startsWith('http://') || href.startsWith('https://')) {
+    e.preventDefault();
+    window.electronAPI.openExternal(href);
+    return;
+  }
+
+  // Handle relative links
+  if (currentFile) {
+    e.preventDefault();
+    const result = await window.electronAPI.resolveLink(currentFile, href);
+
+    if (result.success && result.exists && result.isMarkdown) {
+      // Open markdown file in new tab
+      await createTab(result.resolvedPath);
+    } else if (result.success && result.exists) {
+      // Open non-markdown file with system default
+      window.electronAPI.openExternal(`file://${result.resolvedPath}`);
+    }
+  }
+}
+
+// Get next/previous tab
+function getNextTabId(current, direction = 1) {
+  const currentIndex = tabManager.tabOrder.indexOf(current);
+  if (currentIndex === -1 || tabManager.tabOrder.length <= 1) return null;
+
+  let newIndex = currentIndex + direction;
+  if (newIndex >= tabManager.tabOrder.length) newIndex = 0;
+  if (newIndex < 0) newIndex = tabManager.tabOrder.length - 1;
+
+  return tabManager.tabOrder[newIndex];
+}
 
 // Recent documents (max 15)
 const MAX_RECENT_DOCS = 15;
@@ -113,12 +410,12 @@ function renderRecentDocuments() {
   recent.forEach(doc => {
     const dirPath = getDirectoryPath(doc.path);
     html += `
-      <div class="tree-item recent-doc-item" data-path="${doc.path}" data-type="recent">
+      <div class="tree-item recent-doc-item" data-path="${escapeHtml(doc.path)}" data-type="recent">
         <div class="recent-doc-text">
-          <span class="tree-item-name">${doc.name}</span>
-          <span class="recent-doc-path" title="${doc.path}">${dirPath}</span>
+          <span class="tree-item-name">${escapeHtml(doc.name)}</span>
+          <span class="recent-doc-path" title="${escapeHtml(doc.path)}">${escapeHtml(dirPath)}</span>
         </div>
-        <button class="recent-doc-remove" data-path="${doc.path}" title="Remove from recent">
+        <button class="recent-doc-remove" data-path="${escapeHtml(doc.path)}" title="Remove from recent">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -139,12 +436,7 @@ function renderRecentDocuments() {
       if (e.target.closest('.recent-doc-remove')) return;
 
       const path = item.getAttribute('data-path');
-      currentFile = path;
-      await window.electronAPI.readFile(path);
-
-      // Update active state
-      recentItems.forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
+      await createTab(path);
     });
   });
 
@@ -159,18 +451,66 @@ function renderRecentDocuments() {
   });
 }
 
-// Reload file
+// Reload file and refresh sidebar
 async function handleReload() {
-  isAutoReload = true; // Preserve scroll position
-  await window.electronAPI.reloadFile();
+  // Refresh the file tree if a folder is open
+  if (currentFolder) {
+    const result = await window.electronAPI.navigateFolder(currentFolder);
+    if (result.success) {
+      renderFileTree(result.tree, result.path);
+    }
+  } else {
+    // Refresh recent documents list
+    renderRecentDocuments();
+  }
+
+  // Reload the active tab content
+  if (tabManager.activeTabId && currentFile) {
+    const result = await window.electronAPI.openFileInTab(currentFile);
+    if (result.success) {
+      const tab = tabManager.tabs.get(tabManager.activeTabId);
+      if (tab) {
+        const scrollTop = contentWrapper.scrollTop;
+        tab.html = result.html;
+        tab.outline = result.outline;
+        markdownContent.innerHTML = sanitizeHtml(tab.html);
+        contentWrapper.scrollTop = scrollTop;
+
+        setupTableToggles();
+        renderMermaidDiagrams();
+        renderOutline(tab.outline);
+        setupLinkInterception();
+      }
+    }
+  }
 }
 
 reloadBtn.addEventListener('click', handleReload);
 
 // Listen for file changes (auto-reload)
-let isAutoReload = false;
-window.electronAPI.onFileChanged((_event, _filePath) => {
-  isAutoReload = true;
+window.electronAPI.onFileChanged((_event, data) => {
+  // data contains { filePath, html, fileName, outline }
+  const tabId = findTabByPath(data.filePath);
+  if (!tabId) return;
+
+  const tab = tabManager.tabs.get(tabId);
+  if (!tab) return;
+
+  // Update tab data
+  tab.html = data.html;
+  tab.outline = data.outline;
+
+  // If this is the active tab, update the display
+  if (tabId === tabManager.activeTabId) {
+    const scrollTop = contentWrapper.scrollTop;
+    markdownContent.innerHTML = sanitizeHtml(tab.html);
+    contentWrapper.scrollTop = scrollTop;
+
+    setupTableToggles();
+    renderMermaidDiagrams();
+    renderOutline(tab.outline);
+    setupLinkInterception();
+  }
 });
 
 // Dark mode
@@ -319,7 +659,6 @@ async function handleOpenFolder() {
   const result = await window.electronAPI.openFolder();
   if (result.success) {
     currentFolder = result.path;
-    _currentFolderPath = result.path;
     folderPath.textContent = result.path;
     folderPath.style.display = 'block';
     renderFileTree(result.tree, result.path);
@@ -331,7 +670,6 @@ async function navigateToFolder(path) {
   const result = await window.electronAPI.navigateFolder(path);
   if (result.success) {
     currentFolder = result.path;
-    _currentFolderPath = result.path;
     folderPath.textContent = result.path;
     folderPath.style.display = 'block';
     expandedFolders.clear(); // Clear expanded state when navigating
@@ -359,7 +697,7 @@ function renderFileTree(tree, currentPath) {
   let parentFolderHtml = '';
   if (parentPath && parentPath !== currentPath) {
     parentFolderHtml = `
-      <div class="tree-item folder parent-folder" data-path="${parentPath}" data-type="parent">
+      <div class="tree-item folder parent-folder" data-path="${escapeHtml(parentPath)}" data-type="parent">
         <span class="tree-item-icon">⬆️</span>
         <span class="tree-item-name">..</span>
       </div>
@@ -392,23 +730,23 @@ function buildTreeHtml(items, level = 0) {
       const isExpanded = expandedFolders.has(item.path);
       const folderIcon = isExpanded ? '📂' : '📁';
       const childrenHtml = item.children && item.children.length > 0
-        ? `<div class="tree-children" style="display: ${isExpanded ? 'block' : 'none'};" data-folder-path="${item.path}">
+        ? `<div class="tree-children" style="display: ${isExpanded ? 'block' : 'none'};" data-folder-path="${escapeHtml(item.path)}">
              ${buildTreeHtml(item.children, level + 1)}
            </div>`
         : '';
 
       html += `
-        <div class="tree-item folder" data-path="${item.path}" data-type="folder">
+        <div class="tree-item folder" data-path="${escapeHtml(item.path)}" data-type="folder">
           <span class="tree-item-icon">${folderIcon}</span>
-          <span class="tree-item-name">${item.name}</span>
+          <span class="tree-item-name">${escapeHtml(item.name)}</span>
         </div>
         ${childrenHtml}
       `;
     } else {
       html += `
-        <div class="tree-item" data-path="${item.path}" data-type="file" data-name="${item.name}">
+        <div class="tree-item" data-path="${escapeHtml(item.path)}" data-type="file" data-name="${escapeHtml(item.name)}">
           <span class="tree-item-icon">📄</span>
-          <span class="tree-item-name">${item.name}</span>
+          <span class="tree-item-name">${escapeHtml(item.name)}</span>
         </div>
       `;
     }
@@ -437,13 +775,11 @@ function addTreeClickHandlers() {
 
       // Handle file click
       if (type === 'file') {
-        // Load file
-        currentFile = path;
-        await window.electronAPI.readFile(path);
-
-        // Update active state
-        treeContainer.querySelectorAll('.tree-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
+        // Open file in tab
+        await createTab(path);
+        // Add to recent documents
+        const fileName = item.getAttribute('data-name');
+        addToRecentDocuments(path, fileName);
         return;
       }
 
@@ -549,7 +885,6 @@ function renderOutline(outline) {
     return;
   }
 
-  _currentOutline = outline;
   let outlineHtml = '';
 
   outline.forEach(item => {
@@ -585,60 +920,15 @@ function renderOutline(outline) {
   });
 }
 
-// Listen for markdown content from main process
+// Listen for markdown content from main process (initial file load via dialog or command line)
 window.electronAPI.onLoadMarkdown((event, data) => {
   const { html, fileName, filePath, outline } = data;
 
-  // Hide welcome screen and show markdown content
-  welcomeScreen.style.display = 'none';
-  markdownContent.style.display = 'block';
-
-  // Update file info
-  fileInfo.textContent = fileName;
-  currentFile = filePath;
-
-  // Preserve scroll position for auto-reload
-  const scrollTop = contentWrapper.scrollTop;
-
-  // Display the rendered HTML
-  markdownContent.innerHTML = html;
-
-  // Scroll to top only on manual file open, preserve position on auto-reload
-  if (isAutoReload) {
-    contentWrapper.scrollTop = scrollTop;
-    isAutoReload = false;
-  } else {
-    contentWrapper.scrollTop = 0;
-  }
-
-  // Setup table toggle buttons
-  setupTableToggles();
-
-  // Render mermaid diagrams
-  renderMermaidDiagrams();
-
-  // Render outline
-  renderOutline(outline);
+  // Create a tab for this file
+  createTab(filePath, { html, fileName, filePath, outline });
 
   // Add to recent documents
   addToRecentDocuments(filePath, fileName);
-
-  // Update active state in tree if file is in current tree
-  if (currentFolder) {
-    const treeItems = treeContainer.querySelectorAll('.tree-item[data-type="file"]');
-    treeItems.forEach(item => {
-      if (item.getAttribute('data-path') === filePath) {
-        treeContainer.querySelectorAll('.tree-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-      }
-    });
-  } else {
-    // Update active state for recent docs
-    const recentItems = treeContainer.querySelectorAll('.recent-doc-item');
-    recentItems.forEach(item => {
-      item.classList.toggle('active', item.getAttribute('data-path') === filePath);
-    });
-  }
 });
 
 // Listen for load errors
@@ -646,7 +936,7 @@ window.electronAPI.onLoadError((event, errorMessage) => {
   markdownContent.innerHTML = `
     <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
       <h3 style="color: #d32f2f; margin-bottom: 12px;">Error Loading File</h3>
-      <p>${errorMessage}</p>
+      <p>${escapeHtml(errorMessage)}</p>
     </div>
   `;
   markdownContent.style.display = 'block';
@@ -829,6 +1119,36 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     if (currentFile) {
       handleReload();
+    }
+  }
+
+  // Cmd/Ctrl + W: Close current tab
+  if ((e.metaKey || e.ctrlKey) && e.key === 'w') {
+    e.preventDefault();
+    if (tabManager.activeTabId) {
+      closeTab(tabManager.activeTabId);
+    }
+  }
+
+  // Cmd/Ctrl + Tab: Next tab
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Tab' && !e.shiftKey) {
+    e.preventDefault();
+    if (tabManager.activeTabId) {
+      const nextTabId = getNextTabId(tabManager.activeTabId, 1);
+      if (nextTabId) {
+        switchToTab(nextTabId);
+      }
+    }
+  }
+
+  // Cmd/Ctrl + Shift + Tab: Previous tab
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Tab' && e.shiftKey) {
+    e.preventDefault();
+    if (tabManager.activeTabId) {
+      const prevTabId = getNextTabId(tabManager.activeTabId, -1);
+      if (prevTabId) {
+        switchToTab(prevTabId);
+      }
     }
   }
 });

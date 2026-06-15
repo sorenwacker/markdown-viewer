@@ -1,13 +1,15 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const fs = require('fs').promises;
 const fsSync = require('fs');
-const { marked } = require('marked');
+const { Marked } = require('marked');
 
 let mainWindow;
 let fileToOpen = null;
-let currentWatcher = null;
-let currentFilePath = null;
+
+// Map of file path -> { watcher, debounceTimer }
+const fileWatchers = new Map();
 
 // Handle file opening on macOS
 app.on('open-file', (event, filePath) => {
@@ -132,33 +134,53 @@ function createWindow() {
   });
 }
 
-// Watch a file for changes
+// Watch a file for changes (multi-file support)
 function watchFile(filePath) {
-  // Stop watching previous file
-  if (currentWatcher) {
-    currentWatcher.close();
-    currentWatcher = null;
+  // If already watching this file, do nothing
+  if (fileWatchers.has(filePath)) {
+    return;
   }
 
-  currentFilePath = filePath;
-
-  // Set up new watcher with debounce
-  let debounceTimer = null;
+  // Set up new watcher with debounce. The timer is stored on the map entry so
+  // unwatchFile can clear a pending reload (a local variable would not be
+  // visible to it, leaving a reload to fire after the file is unwatched).
+  const entry = { watcher: null, debounceTimer: null };
   try {
-    currentWatcher = fsSync.watch(filePath, (eventType) => {
+    entry.watcher = fsSync.watch(filePath, (eventType) => {
       if (eventType === 'change') {
         // Debounce to avoid multiple reloads
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          loadMarkdownFile(filePath, false); // Don't re-setup watcher
-          if (mainWindow) {
-            mainWindow.webContents.send('file-changed', filePath);
+        if (entry.debounceTimer) clearTimeout(entry.debounceTimer);
+        entry.debounceTimer = setTimeout(async () => {
+          // Re-parse the file and send updated content
+          try {
+            const data = await parseMarkdownFile(filePath);
+            if (mainWindow) {
+              mainWindow.webContents.send('file-changed', {
+                filePath,
+                ...data
+              });
+            }
+          } catch (error) {
+            console.error('Error reloading file:', error);
           }
         }, 100);
       }
     });
+    fileWatchers.set(filePath, entry);
   } catch (error) {
     console.error('Error watching file:', error);
+  }
+}
+
+// Stop watching a file
+function unwatchFile(filePath) {
+  const watcherData = fileWatchers.get(filePath);
+  if (watcherData) {
+    if (watcherData.debounceTimer) {
+      clearTimeout(watcherData.debounceTimer);
+    }
+    watcherData.watcher.close();
+    fileWatchers.delete(filePath);
   }
 }
 
@@ -173,93 +195,143 @@ function generateSlug(text) {
     .trim();
 }
 
+// Escape a string for safe interpolation into an HTML attribute value.
+function escapeAttribute(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Resolve a markdown image source so embedded images display. Absolute URLs
+// (http(s), data:, file:, protocol-relative) are kept as-is; a path relative to
+// the markdown file is converted to an absolute file:// URL so it loads
+// regardless of the renderer's own location.
+function resolveImageSrc(src, filePath) {
+  if (!src) return '';
+  if (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(src)) {
+    return src;
+  }
+  const absolute = path.resolve(path.dirname(filePath), src);
+  return pathToFileURL(absolute).href;
+}
+
+// Parse a markdown file and return the rendered data
+async function parseMarkdownFile(filePath) {
+  const content = await fs.readFile(filePath, 'utf-8');
+
+  // Track heading IDs to handle duplicates
+  const headingIds = {};
+
+  // Custom renderer to add IDs to headings and handle mermaid code blocks
+  const renderer = {
+    heading(text, level, _raw) {
+      // Handle both old API (text, level, raw) and new API (object)
+      let headingText, headingLevel;
+
+      if (typeof text === 'object') {
+        // New marked v11+ API - token object
+        headingText = text.text || '';
+        headingLevel = text.depth || 1;
+      } else {
+        // Old API - separate arguments
+        headingText = text;
+        headingLevel = level;
+      }
+
+      let slug = generateSlug(headingText);
+
+      // Handle duplicate IDs
+      if (headingIds[slug]) {
+        headingIds[slug]++;
+        slug = `${slug}-${headingIds[slug]}`;
+      } else {
+        headingIds[slug] = 1;
+      }
+
+      return `<h${headingLevel} id="${slug}">${headingText}</h${headingLevel}>\n`;
+    },
+    image(href, title, text) {
+      // Handle both old API (href, title, text) and new API (token object)
+      let imgHref, imgTitle, imgText;
+
+      if (typeof href === 'object') {
+        imgHref = href.href || '';
+        imgTitle = href.title || '';
+        imgText = href.text || '';
+      } else {
+        imgHref = href || '';
+        imgTitle = title || '';
+        imgText = text || '';
+      }
+
+      const src = escapeAttribute(resolveImageSrc(imgHref, filePath));
+      const altAttr = ` alt="${escapeAttribute(imgText)}"`;
+      const titleAttr = imgTitle ? ` title="${escapeAttribute(imgTitle)}"` : '';
+      return `<img src="${src}"${altAttr}${titleAttr}>`;
+    },
+    code(code, language) {
+      // Handle both old API (code, language) and new API (object)
+      let codeText, codeLang;
+
+      if (typeof code === 'object') {
+        // New marked v11+ API - token object
+        codeText = code.text || '';
+        codeLang = code.lang || '';
+      } else {
+        // Old API - separate arguments
+        codeText = code;
+        codeLang = language || '';
+      }
+
+      // Handle mermaid code blocks specially
+      if (codeLang === 'mermaid') {
+        return `<div class="mermaid">${codeText}</div>\n`;
+      }
+
+      // Default code block rendering
+      const langClass = codeLang ? ` class="language-${codeLang}"` : '';
+      const escaped = codeText
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      return `<pre><code${langClass}>${escaped}</code></pre>\n`;
+    }
+  };
+
+  // Use a per-parse Marked instance so options and the renderer (which closes
+  // over this call's headingIds) are scoped to this call rather than mutating
+  // the shared global marked singleton on every parse.
+  const md = new Marked({
+    breaks: true,
+    gfm: true,
+    renderer: renderer
+  });
+
+  // Parse markdown to HTML
+  let html = md.parse(content);
+
+  // Wrap tables in a container with toggle button
+  html = wrapTablesWithToggle(html);
+
+  // Extract headings for outline
+  const outline = extractOutline(html);
+
+  return {
+    html,
+    filePath,
+    fileName: path.basename(filePath),
+    outline
+  };
+}
+
 async function loadMarkdownFile(filePath, setupWatcher = true) {
   try {
-    const content = await fs.readFile(filePath, 'utf-8');
+    const data = await parseMarkdownFile(filePath);
 
-    // Track heading IDs to handle duplicates
-    const headingIds = {};
-
-    // Custom renderer to add IDs to headings and handle mermaid code blocks
-    const renderer = {
-      heading(text, level, _raw) {
-        // Handle both old API (text, level, raw) and new API (object)
-        let headingText, headingLevel;
-
-        if (typeof text === 'object') {
-          // New marked v11+ API - token object
-          headingText = text.text || '';
-          headingLevel = text.depth || 1;
-        } else {
-          // Old API - separate arguments
-          headingText = text;
-          headingLevel = level;
-        }
-
-        let slug = generateSlug(headingText);
-
-        // Handle duplicate IDs
-        if (headingIds[slug]) {
-          headingIds[slug]++;
-          slug = `${slug}-${headingIds[slug]}`;
-        } else {
-          headingIds[slug] = 1;
-        }
-
-        return `<h${headingLevel} id="${slug}">${headingText}</h${headingLevel}>\n`;
-      },
-      code(code, language) {
-        // Handle both old API (code, language) and new API (object)
-        let codeText, codeLang;
-
-        if (typeof code === 'object') {
-          // New marked v11+ API - token object
-          codeText = code.text || '';
-          codeLang = code.lang || '';
-        } else {
-          // Old API - separate arguments
-          codeText = code;
-          codeLang = language || '';
-        }
-
-        // Handle mermaid code blocks specially
-        if (codeLang === 'mermaid') {
-          return `<div class="mermaid">${codeText}</div>\n`;
-        }
-
-        // Default code block rendering
-        const langClass = codeLang ? ` class="language-${codeLang}"` : '';
-        const escaped = codeText
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;');
-        return `<pre><code${langClass}>${escaped}</code></pre>\n`;
-      }
-    };
-
-    // Configure marked options
-    marked.use({
-      breaks: true,
-      gfm: true,
-      renderer: renderer
-    });
-
-    // Parse markdown to HTML
-    let html = marked.parse(content);
-
-    // Wrap tables in a container with toggle button
-    html = wrapTablesWithToggle(html);
-
-    // Extract headings for outline
-    const outline = extractOutline(html);
-
-    mainWindow.webContents.send('load-markdown', {
-      html: html,
-      filePath: filePath,
-      fileName: path.basename(filePath),
-      outline: outline
-    });
+    mainWindow.webContents.send('load-markdown', data);
 
     // Set up file watcher
     if (setupWatcher) {
@@ -356,59 +428,67 @@ ipcMain.handle('navigate-folder', async (event, folderPath) => {
   }
 });
 
-// Handle read file request from renderer
-ipcMain.handle('read-file', async (event, filePath) => {
-  await loadMarkdownFile(filePath);
+// Handle opening external URLs. Validate the scheme here because this channel
+// is reachable from any renderer-context code, so the renderer-side checks are
+// not a security boundary; shell.openExternal can otherwise launch arbitrary
+// protocol handlers.
+ipcMain.handle('open-external', async (event, url) => {
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return;
+  }
+  if (!['http:', 'https:', 'mailto:', 'file:'].includes(parsed.protocol)) {
+    return;
+  }
+  await shell.openExternal(url);
+});
+
+// Handle opening a file in a new tab (returns parsed data without sending to renderer)
+ipcMain.handle('open-file-in-tab', async (event, filePath) => {
+  try {
+    const data = await parseMarkdownFile(filePath);
+    watchFile(filePath);
+    return { success: true, ...data };
+  } catch (error) {
+    console.error('Error opening file in tab:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Handle closing a tab (stop watching the file)
+ipcMain.handle('close-tab', async (event, filePath) => {
+  unwatchFile(filePath);
   return true;
 });
 
-// Handle reload current file request
-ipcMain.handle('reload-file', async () => {
-  if (currentFilePath) {
-    await loadMarkdownFile(currentFilePath);
-    return true;
+// Handle resolving a relative link path
+ipcMain.handle('resolve-link', async (event, basePath, linkPath) => {
+  try {
+    // Get the directory of the current file
+    const baseDir = path.dirname(basePath);
+
+    // Resolve the relative path
+    const resolvedPath = path.resolve(baseDir, linkPath);
+
+    // Check if the file exists
+    const exists = fsSync.existsSync(resolvedPath);
+
+    // Check if it's a markdown file
+    const ext = path.extname(resolvedPath).toLowerCase();
+    const isMarkdown = ['.md', '.markdown', '.mdown', '.mkd'].includes(ext);
+
+    return {
+      success: true,
+      resolvedPath,
+      exists,
+      isMarkdown
+    };
+  } catch (error) {
+    console.error('Error resolving link:', error);
+    return { success: false, error: error.message };
   }
-  return false;
-});
-
-// Handle export to PDF request
-ipcMain.handle('export-pdf', async (event, orientation) => {
-  const result = await dialog.showSaveDialog(mainWindow, {
-    title: 'Export to PDF',
-    defaultPath: 'document.pdf',
-    filters: [
-      { name: 'PDF Files', extensions: ['pdf'] }
-    ]
-  });
-
-  if (!result.canceled && result.filePath) {
-    try {
-      const data = await mainWindow.webContents.printToPDF({
-        printBackground: true,
-        landscape: orientation === 'landscape',
-        pageSize: 'A4',
-        margins: {
-          top: 0,
-          bottom: 0,
-          left: 0,
-          right: 0
-        }
-      });
-
-      await fs.writeFile(result.filePath, data);
-      return { success: true, path: result.filePath };
-    } catch (error) {
-      console.error('Error exporting PDF:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  return { success: false };
-});
-
-// Handle opening external URLs
-ipcMain.handle('open-external', async (event, url) => {
-  await shell.openExternal(url);
 });
 
 // Build file tree recursively

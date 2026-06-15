@@ -1,6 +1,6 @@
 {
   "name": "markdown-viewer",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A cross-platform Electron markdown viewer",
   "main": "main.js",
   "scripts": {
@@ -24,6 +24,7 @@
       "renderer.html",
       "styles.css",
       "renderer.js",
+      "node_modules/dompurify/dist/purify.min.js",
       "node_modules/mermaid/dist/mermaid.min.js"
     ],
     "mac": {
@@ -111,6 +112,7 @@
     "playwright": "^1.57.0"
   },
   "dependencies": {
+    "dompurify": "^3.4.10",
     "marked": "^11.0.0",
     "mermaid": "^11.12.1"
   }

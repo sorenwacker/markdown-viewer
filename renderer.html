@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; img-src 'self' data: file: http: https:">
   <title>Markdown Viewer</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -135,6 +135,11 @@
         </div>
       </header>
 
+      <!-- Tab Bar (hidden when only 1 or 0 tabs) -->
+      <div id="tabBar" class="tab-bar" style="display: none;">
+        <div id="tabBarContent" class="tab-bar-content"></div>
+      </div>
+
       <div class="content-wrapper">
         <div id="welcomeScreen" class="welcome-screen">
           <div class="welcome-content">
@@ -176,6 +181,7 @@
     </main>
   </div>
 
+  <script src="./node_modules/dompurify/dist/purify.min.js"></script>
   <script src="./node_modules/mermaid/dist/mermaid.min.js"></script>
   <script src="renderer.js"></script>
 </body>

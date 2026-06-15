@@ -19,6 +19,7 @@ module.exports = [
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        URL: 'readonly',
         // Browser globals (for renderer)
         window: 'readonly',
         document: 'readonly',

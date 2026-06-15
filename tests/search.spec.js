@@ -15,28 +15,22 @@ test.describe('Search UI', () => {
     await expect(window.locator('#searchClose')).toBeAttached();
   });
 
-  test('should open search bar when style is changed to visible', async ({ window }) => {
+  test('should open search bar with the Find shortcut', async ({ window }) => {
     const searchBar = window.locator('#searchBar');
+    await expect(searchBar).not.toBeVisible();
 
-    // Manually show the search bar
-    await window.evaluate(() => {
-      document.getElementById('searchBar').style.display = 'flex';
-    });
+    // Drive the app's real Cmd/Ctrl+F handler, not the inline style.
+    await window.keyboard.press('ControlOrMeta+f');
 
     await expect(searchBar).toBeVisible();
-
-    // Verify all controls are visible
     await expect(window.locator('#searchInput')).toBeVisible();
-    await expect(window.locator('#searchClose')).toBeVisible();
+    await expect(window.locator('#searchInput')).toBeFocused();
   });
 
   test('should close search bar with close button', async ({ window }) => {
     const searchBar = window.locator('#searchBar');
 
-    // Show search bar
-    await window.evaluate(() => {
-      document.getElementById('searchBar').style.display = 'flex';
-    });
+    await window.keyboard.press('ControlOrMeta+f');
     await expect(searchBar).toBeVisible();
 
     // Click close button
