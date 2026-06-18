@@ -23,7 +23,9 @@
       "preload.js",
       "renderer.html",
       "styles.css",
+      "css/**/*.css",
       "renderer.js",
+      "modules/**/*.js",
       "node_modules/dompurify/dist/purify.min.js",
       "node_modules/mermaid/dist/mermaid.min.js"
     ],

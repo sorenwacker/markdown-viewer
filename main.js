@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, shell, clipboard } = require('electron');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const fs = require('fs').promises;
@@ -151,6 +151,9 @@ function watchFile(filePath) {
         // Debounce to avoid multiple reloads
         if (entry.debounceTimer) clearTimeout(entry.debounceTimer);
         entry.debounceTimer = setTimeout(async () => {
+          // No window to receive the update (the macOS app stays alive with the
+          // window closed) — skip the disk read and parse entirely.
+          if (!mainWindow) return;
           // Re-parse the file and send updated content
           try {
             const data = await parseMarkdownFile(filePath);
@@ -321,6 +324,7 @@ async function parseMarkdownFile(filePath) {
 
   return {
     html,
+    markdown: content,
     filePath,
     fileName: path.basename(filePath),
     outline
@@ -443,6 +447,14 @@ ipcMain.handle('open-external', async (event, url) => {
     return;
   }
   await shell.openExternal(url);
+});
+
+// Write text to the system clipboard. The clipboard lives in the main process,
+// so the renderer's copy action is routed here rather than relying on the
+// renderer's restricted clipboard access.
+ipcMain.handle('copy-to-clipboard', async (event, text) => {
+  clipboard.writeText(String(text ?? ''));
+  return true;
 });
 
 // Handle opening a file in a new tab (returns parsed data without sending to renderer)
