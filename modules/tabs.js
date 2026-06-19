@@ -2,8 +2,8 @@
 // bar. Distinct from the sidebar Files/Outline panes (see switchSidebarPane in
 // renderer.js).
 import {
-  welcomeScreen, markdownContent, fileInfo, copySourceBtn, outlineContainer,
-  contentWrapper, tabBar, tabBarContent, treeContainer,
+  welcomeScreen, markdownContent, fileInfo, copySourceBtn, sourceToggleBtn,
+  outlineContainer, contentWrapper, tabBar, tabBarContent, treeContainer,
 } from './dom.js';
 import { escapeHtml, sanitizeHtml } from './html.js';
 import { state, tabManager } from './state.js';
@@ -11,10 +11,33 @@ import {
   setupTableToggles, renderMermaidDiagrams, renderOutline, setupLinkInterception,
 } from './view.js';
 import { resetCopyFeedback } from './copy.js';
+import { updateSourceToggleUI } from './source-view.js';
 
 // Generate unique tab ID
 function generateTabId() {
   return `tab-${tabManager.nextTabId++}`;
+}
+
+// Render the active tab's content according to its view mode, then run the
+// post-render setup the rendered view needs (diagrams, table toggles, links)
+// and refresh the outline. The single place that writes #markdownContent, so
+// tab switching, reloading, file-watch updates, and the source toggle all stay
+// consistent. Callers handle scroll position around it.
+export function renderActiveTabContent(tab) {
+  if (tab.sourceView) {
+    // Insert the raw markdown as text, never as markup, so it is shown verbatim
+    // and cannot inject HTML.
+    markdownContent.innerHTML = '<pre class="markdown-source"><code></code></pre>';
+    markdownContent.querySelector('.markdown-source code').textContent = tab.markdown ?? '';
+  } else {
+    markdownContent.innerHTML = sanitizeHtml(tab.html);
+    setupTableToggles();
+    renderMermaidDiagrams();
+    setupLinkInterception();
+  }
+
+  renderOutline(tab.outline);
+  updateSourceToggleUI(tab);
 }
 
 // Find tab by file path
@@ -54,7 +77,8 @@ export async function createTab(filePath, data = null) {
     html: data.html,
     markdown: data.markdown,
     outline: data.outline,
-    scrollPosition: 0
+    scrollPosition: 0,
+    sourceView: false
   };
 
   tabManager.tabs.set(tabId, tab);
@@ -85,19 +109,14 @@ export function switchToTab(tabId) {
   // Update UI
   welcomeScreen.style.display = 'none';
   markdownContent.style.display = 'block';
-  markdownContent.innerHTML = sanitizeHtml(tab.html);
   fileInfo.textContent = tab.fileName;
   copySourceBtn.style.display = 'flex';
+  sourceToggleBtn.style.display = 'flex';
   resetCopyFeedback();
 
-  // Restore scroll position
+  // Render content in this tab's view mode, then restore its scroll position.
+  renderActiveTabContent(tab);
   contentWrapper.scrollTop = tab.scrollPosition;
-
-  // Setup post-render elements
-  setupTableToggles();
-  renderMermaidDiagrams();
-  renderOutline(tab.outline);
-  setupLinkInterception();
 
   // Update tab bar active state
   renderTabBar();
@@ -135,6 +154,7 @@ export async function closeTab(tabId) {
       markdownContent.style.display = 'none';
       fileInfo.textContent = 'Markdown Viewer';
       copySourceBtn.style.display = 'none';
+      sourceToggleBtn.style.display = 'none';
       outlineContainer.innerHTML = `
         <div class="tree-empty">
           <p>No file opened</p>

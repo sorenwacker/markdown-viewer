@@ -233,6 +233,14 @@
   line-height: 1.6;
 }
 
+/* Source view: the raw markdown shown verbatim. Reuses the code-block frame but
+   wraps long lines so the source stays readable without horizontal scrolling. */
+.markdown-content .markdown-source code {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .markdown-content blockquote {
   border-left: 4px solid var(--primary-color);
   padding: 0.75em 1.25em;

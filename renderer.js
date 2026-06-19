@@ -6,17 +6,15 @@ import {
   openFileBtn, welcomeOpenFileBtn, openFolderBtn, welcomeOpenFolderBtn,
   markdownContent, welcomeScreen, contentWrapper,
 } from './modules/dom.js';
-import { escapeHtml, sanitizeHtml } from './modules/html.js';
+import { escapeHtml } from './modules/html.js';
 import { state, tabManager } from './modules/state.js';
 import {
-  createTab, switchToTab, closeTab, getNextTabId, findTabByPath,
+  createTab, switchToTab, closeTab, getNextTabId, findTabByPath, renderActiveTabContent,
 } from './modules/tabs.js';
-import {
-  setupTableToggles, renderMermaidDiagrams, renderOutline, setupLinkInterception,
-} from './modules/view.js';
 import { addToRecentDocuments, renderRecentDocuments } from './modules/recent.js';
 import { handleOpenFile, handleOpenFolder, renderFileTree } from './modules/filetree.js';
 import { handleCopySource } from './modules/copy.js';
+import { handleToggleSource } from './modules/source-view.js';
 import { openSearch } from './modules/search.js';
 import './modules/prefs.js';
 
@@ -49,13 +47,8 @@ async function handleReload() {
         tab.html = result.html;
         tab.markdown = result.markdown;
         tab.outline = result.outline;
-        markdownContent.innerHTML = sanitizeHtml(tab.html);
+        renderActiveTabContent(tab);
         contentWrapper.scrollTop = scrollTop;
-
-        setupTableToggles();
-        renderMermaidDiagrams();
-        renderOutline(tab.outline);
-        setupLinkInterception();
       }
     }
   }
@@ -80,13 +73,8 @@ window.electronAPI.onFileChanged((_event, data) => {
   // If this is the active tab, update the display
   if (tabId === tabManager.activeTabId) {
     const scrollTop = contentWrapper.scrollTop;
-    markdownContent.innerHTML = sanitizeHtml(tab.html);
+    renderActiveTabContent(tab);
     contentWrapper.scrollTop = scrollTop;
-
-    setupTableToggles();
-    renderMermaidDiagrams();
-    renderOutline(tab.outline);
-    setupLinkInterception();
   }
 });
 
@@ -188,6 +176,12 @@ document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'c' || e.key === 'C')) {
     e.preventDefault();
     handleCopySource();
+  }
+
+  // Cmd/Ctrl + Shift + S: Toggle markdown source view
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 's' || e.key === 'S')) {
+    e.preventDefault();
+    handleToggleSource();
   }
 
   // Cmd/Ctrl + R: Reload file
