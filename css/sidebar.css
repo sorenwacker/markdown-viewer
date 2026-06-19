@@ -1,0 +1,243 @@
+/* Sidebar Styles */
+.sidebar {
+  width: var(--sidebar-width);
+  background-color: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.sidebar.collapsed {
+  width: 0;
+  border: none;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Sidebar Tabs */
+.sidebar-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.tab-btn {
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.tab-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Tab Content */
+.tab-content {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.tab-content.active {
+  display: flex;
+}
+
+.sidebar-actions {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Folder Path Display */
+.folder-path {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+.sidebar-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: var(--transition);
+  width: 100%;
+}
+
+.sidebar-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--text-tertiary);
+}
+
+.sidebar-btn svg {
+  flex-shrink: 0;
+}
+
+/* Tree Container */
+.tree-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.tree-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: 20px;
+}
+
+.tree-empty p {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.tree-empty .hint {
+  font-size: 12px;
+  margin: 0;
+}
+
+/* File Tree Styles */
+.tree-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: var(--transition);
+  user-select: none;
+}
+
+.tree-item:hover {
+  background: var(--bg-secondary);
+}
+
+.tree-item.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.tree-item.folder {
+  font-weight: 500;
+}
+
+.tree-item-icon {
+  margin-right: 6px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.tree-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-children {
+  padding-left: 16px;
+}
+
+/* Outline Container */
+.outline-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.outline-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: var(--transition);
+  user-select: none;
+  line-height: 1.4;
+}
+
+.outline-item:hover {
+  background: var(--bg-secondary);
+}
+
+.outline-item.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.outline-item.level-1 {
+  font-weight: 600;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.outline-item.level-2 {
+  padding-left: 16px;
+  font-weight: 500;
+}
+
+.outline-item.level-3 {
+  padding-left: 32px;
+}
+
+.outline-item.level-4 {
+  padding-left: 48px;
+  font-size: 12px;
+}
+
+.outline-item.level-5 {
+  padding-left: 64px;
+  font-size: 12px;
+}
+
+.outline-item.level-6 {
+  padding-left: 80px;
+  font-size: 12px;
+}
+

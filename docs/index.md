@@ -14,6 +14,7 @@ A cross-platform Electron-based markdown viewer for macOS, Windows, and Linux.
 ## At a glance
 
 - Clean, distraction-free markdown viewing with in-document search.
+- Copy the raw markdown source of the active document to the clipboard.
 - Mermaid diagrams and syntax-highlighted code blocks.
 - Embedded images: external (`http`/`https`), `data:`, and local files.
 - File browser, document outline, recent documents, and live file watching.

@@ -42,4 +42,12 @@ module.exports = [
       'no-trailing-spaces': 'error',
     },
   },
+  {
+    // The renderer is delivered as an ES module (renderer.html loads it with
+    // type="module"); main/preload and the test/config files stay CommonJS.
+    files: ['renderer.js', 'modules/**/*.js'],
+    languageOptions: {
+      sourceType: 'module',
+    },
+  },
 ];

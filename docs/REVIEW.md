@@ -1,8 +1,69 @@
 # Codebase Review
 
-Date: 260615
+Date: 260615 (initial), re-reviewed 260618
 Scope: full source tree of markdown-viewer (Electron) — `main.js`, `preload.js`, `renderer.js`, `renderer.html`, `styles.css`, `tests/`, and config files.
-Method: per-module review (one agent per group) followed by adversarial verification of every high/medium finding. 21 files reviewed, 22 findings produced; 11 confirmed, 1 refuted, 10 lower-confidence notes retained as an appendix.
+Method: per-module review (one agent per group) followed by adversarial verification of every high/medium finding. 21 files reviewed, 22 findings produced; 11 confirmed, 1 refuted, 10 lower-confidence notes retained as an appendix. The 260618 re-review is recorded in the section below; the 260615 record follows it unchanged.
+
+## Re-review (260618)
+
+Re-ran the review after the copy-source feature was added (clipboard IPC in `main.js`, `copyToClipboard` in `preload.js`, `handleCopySource` + header button + `Cmd/Ctrl+Shift+C` in `renderer.js`/`renderer.html`, `.copied` state in `styles.css`). The multi-agent verification workflow could not run (account session limit), so findings were verified inline by reading the cited code and, where behavior was in doubt, by executing it.
+
+### Baseline gates (260618)
+
+| Gate | Command | Result |
+|------|---------|--------|
+| Lint / format | `npm run lint` (`eslint .`) | PASS (clean) |
+| Tests | `npm test` (`playwright test`) | PASS (23/23) |
+| Dead code | `eslint` `no-unused-vars` (error) | PASS — no unused vars/imports |
+| File-size rule (<=1000 LOC) | style guide | PASS (after remediation) — `renderer.js` split into ES modules (largest 233 LOC); `styles.css` split into `css/` partials via `@import` (largest 368 LOC) |
+| TODO/FIXME markers | grep | none |
+| Pre-commit hooks | n/a | not configured |
+| Type checker | n/a | not configured (plain JS) |
+
+### Prior findings
+
+All 11 confirmed findings and the appendix items from 260615 remain fixed; no regressions found. The DOMPurify sanitization, escaped-interpolation, `open-external` scheme allow-list, per-parse `Marked` instance, and watcher-timer fixes are all still in place.
+
+### New / remaining findings (260618)
+
+Verified by direct code inspection. No high-severity findings.
+
+#### Medium
+
+- **renderer.js (file-level) / styles.css (file-level) — exceeded the 1000-LOC rule.** `renderer.js` was 1196 LOC and `styles.css` 1100 LOC; deferred at 260615. **Fixed (260618):** `renderer.html` now loads `renderer.js` as `type="module"`, and the renderer was split into `modules/` (dom, html, state, view, tabs, copy, recent, filetree, search, prefs) wired by a 233-LOC bootstrap. `styles.css` became a list of `@import`s pulling `css/{base,sidebar,header,content,components}.css`. Largest files are now `css/content.css` (368) and `modules/tabs.js` (224). ESLint gained a `sourceType: 'module'` block for the renderer files; `package.json` `build.files` now bundles `modules/**/*.js` and `css/**/*.css`. All 25 tests pass.
+
+#### Low
+
+- **renderer.js:354 (correctness) — `getRecentDocuments` parses `localStorage` without a guard.** `return stored ? JSON.parse(stored) : []` throws if `recentDocuments` holds invalid JSON. It is called from `renderRecentDocuments()`, which runs at renderer init, so a corrupt/legacy value breaks startup of the recent-documents panel. Fix: wrap in `try/catch` and fall back to `[]` (and clear the bad key).
+- **renderer.js:144 vs 665 (naming) — `switchToTab` and `switchTab` are near-identical names for unrelated concepts.** `switchToTab(tabId)` activates a document tab; `switchTab(tabName)` toggles the sidebar Files/Outline panes. The names invite confusion. Fix: rename the sidebar one (e.g. `switchSidebarPane`).
+- **main.js:155 (design) — `watchFile` reload parses the file before checking `mainWindow`.** The debounced callback does `await parseMarkdownFile(filePath)` and only then `if (mainWindow)`. On macOS the app stays alive with the window closed, so a watched file changing still triggers disk read + parse with no consumer. Fix: check `if (!mainWindow) return` before parsing.
+- **renderer.js:869 (design/security) — mermaid runs with `securityLevel: 'loose'` and `htmlLabels: true`.** Diagram-defined links/HTML render with loose security after the container is sanitized, leaving a residual injection surface for a crafted diagram in an opened file. Threat model is a user-opened local file, so severity is low; consider `securityLevel: 'strict'` unless loose features are required.
+- **renderer.js:164 (correctness, cosmetic) — copy-source button icon state is not reset on tab switch.** `switchToTab` shows the button but does not restore the copy/checkmark icons, so a checkmark shown just before switching tabs lingers on the next document until the 1.5s timer fires. Fix: reset the icon state (and clear `copyFeedbackTimer`) in `switchToTab`.
+- **tests/copy.spec.js (test hygiene) — the copy tests read/write the real system clipboard.** Running the suite overwrites whatever the user had on the clipboard. Acceptable for a local Electron test, but worth noting; there is no isolation.
+
+### Remediation status (260618)
+
+Fixed in the same session (gates after: ESLint clean, 25/25 Playwright tests pass):
+
+| Finding | Status |
+|---------|--------|
+| `getRecentDocuments` unguarded `JSON.parse` | Fixed — `try/catch`, non-array guard, and removal of the corrupt key; covered by `tests/recent-docs.spec.js` |
+| Copy-source checkmark lingers on tab switch | Fixed — `resetCopyFeedback` helper called from `switchToTab`; covered by a new `tests/copy.spec.js` case |
+| `switchTab`/`switchToTab` name collision | Fixed — sidebar function renamed to `switchSidebarPane` |
+| `watchFile` parses before the `mainWindow` check | Fixed — early `return` when no window before the disk read/parse |
+| mermaid `securityLevel: 'loose'` | Left as-is by decision — `'strict'` disables `htmlLabels` and diagram links; not justified for the user-opened-local-file threat model with a sanitized container |
+| Copy tests touch the real system clipboard | Accepted — no isolation available in the Electron test harness; documented |
+
+The file-size rule (`renderer.js`, `styles.css`) — previously deferred — was also resolved this session via the ES-module and `@import` splits described in the Medium finding above.
+
+### Refuted (260618)
+
+- **Headings drop inline markdown formatting.** Candidate finding: the custom `heading` renderer in `main.js` returns `token.text`, suspected to be raw markdown, losing bold/code/links. Refuted by execution: with marked 11.2.0, `token.text` already contains rendered inline HTML, so ``# Hello **bold** and `code` and [link](...)`` produces `<strong>`, `<code>`, and `<a>` correctly — identical to marked's default heading output. The custom renderer only adds the `id`, and `generateSlug` strips the inline tags for the slug.
+- **Outline text injected without escaping** (re-confirming the 260615 refutation). `extractOutline` strips tags and marked already entity-escapes inline text, so the value inserted into the outline is inert.
+
+---
+
+## Initial review (260615)
 
 ## Baseline gates
 
