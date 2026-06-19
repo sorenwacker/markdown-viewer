@@ -21,6 +21,7 @@ export const fontIncreaseBtn = document.getElementById('fontIncreaseBtn');
 export const fontDecreaseBtn = document.getElementById('fontDecreaseBtn');
 export const reloadBtn = document.getElementById('reloadBtn');
 export const copySourceBtn = document.getElementById('copySourceBtn');
+export const sourceToggleBtn = document.getElementById('sourceToggleBtn');
 export const contentWrapper = document.querySelector('.content-wrapper');
 export const searchBar = document.getElementById('searchBar');
 export const searchInput = document.getElementById('searchInput');

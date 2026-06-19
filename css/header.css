@@ -65,6 +65,13 @@
   color: #22c55e;
 }
 
+/* Toggled-on state for stateful icon buttons (e.g. the source view toggle). */
+.icon-btn.active,
+.icon-btn.active:hover {
+  background: var(--bg-tertiary);
+  color: var(--primary-color);
+}
+
 /* Tab Bar */
 .tab-bar {
   height: 36px;

@@ -13,6 +13,7 @@ A cross-platform Electron-based markdown viewer for macOS, Windows, and Linux.
 ## Features
 
 - Clean, distraction-free markdown viewing
+- View the raw markdown source of a document in-app, toggled per tab (Cmd/Ctrl+Shift+S)
 - Copy the raw markdown source to the clipboard (Cmd/Ctrl+Shift+C)
 - In-document search (Cmd/Ctrl+F)
 - Mermaid diagram support (ERD, flowcharts, sequence diagrams, etc.)
@@ -72,6 +73,7 @@ npm run build:linux  # Linux
 | Shortcut | Action |
 |----------|--------|
 | `Cmd/Ctrl + F` | Search in document |
+| `Cmd/Ctrl + Shift + S` | Toggle markdown source view |
 | `Cmd/Ctrl + Shift + C` | Copy markdown source |
 | `Cmd/Ctrl + O` | Open file |
 | `Cmd/Ctrl + Shift + O` | Open folder |

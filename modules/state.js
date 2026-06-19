@@ -8,7 +8,7 @@ export const state = {
 };
 
 // Tab manager state.
-// Tab object structure: { id, filePath, fileName, html, markdown, outline, scrollPosition }
+// Tab object structure: { id, filePath, fileName, html, markdown, outline, scrollPosition, sourceView }
 export const tabManager = {
   tabs: new Map(), // Map<tabId, tabData>
   activeTabId: null,
