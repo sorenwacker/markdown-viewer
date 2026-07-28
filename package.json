@@ -109,7 +109,7 @@
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "electron": "^39.2.4",
-    "electron-builder": "^26.6.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^9.39.2",
     "playwright": "^1.57.0"
   },
