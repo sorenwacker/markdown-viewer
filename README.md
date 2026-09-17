@@ -121,8 +121,8 @@ Supported diagram types include flowcharts, sequence diagrams, ERD, class diagra
 ### Running Tests
 
 ```bash
-npm test              # Run tests
-npm run test:headed   # Run tests with visible browser
+npm test              # Run tests without showing app windows
+npm run test:headed   # Run tests with visible app windows
 ```
 
 ### Linting

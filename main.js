@@ -8,6 +8,11 @@ const { Marked } = require('marked');
 let mainWindow;
 let fileToOpen = null;
 
+// Run without showing any window, for the automated test suite. Hidden windows
+// keep rendering at full rate so layout, timers, and animation frames behave as
+// in a visible window.
+const headless = process.env.MARKDOWN_VIEWER_HEADLESS === '1';
+
 // Map of file path -> { watcher, debounceTimer }
 const fileWatchers = new Map();
 
@@ -103,10 +108,12 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    show: !headless,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      backgroundThrottling: !headless
     },
     title: 'Markdown Viewer',
     icon: path.join(__dirname, 'icon.png')
@@ -556,6 +563,7 @@ async function buildFileTree(dirPath, depth = 0, maxDepth = 3) {
 }
 
 app.whenReady().then(() => {
+  if (headless && app.dock) app.dock.hide();
   createMenu();
   createWindow();
 

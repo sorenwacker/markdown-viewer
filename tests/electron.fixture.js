@@ -2,9 +2,12 @@ const { test: base, _electron: electron } = require('@playwright/test');
 const path = require('path');
 
 exports.test = base.extend({
-  electronApp: async ({}, use) => {
+  // Playwright's headless option (false with --headed) decides whether the app
+  // shows its window.
+  electronApp: async ({ headless }, use) => {
     const electronApp = await electron.launch({
       args: [path.join(__dirname, '../main.js')],
+      env: { ...process.env, MARKDOWN_VIEWER_HEADLESS: headless ? '1' : '0' },
     });
     await use(electronApp);
     await electronApp.close();
