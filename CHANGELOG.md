@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0-rc.1] - 2026-09-17
+
 ### Added
 - Edit mode (Cmd/Ctrl+E): split view with the shared markdown-editor package and a live preview, explicit saving (Cmd/Ctrl+S), unsaved-change confirmations, and a banner when a modified file changes on disk
 - Tests run without showing app windows; `npm run test:headed` shows them
