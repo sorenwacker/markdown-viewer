@@ -5,3 +5,4 @@
 @import url("css/header.css");     /* main area, header, icon buttons, tab bar */
 @import url("css/content.css");    /* content wrapper, welcome, markdown, tables */
 @import url("css/components.css"); /* scrollbars, recent docs, mermaid, search, support */
+@import url("css/editor.css");     /* edit mode split view, editor pane, banners */

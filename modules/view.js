@@ -60,6 +60,17 @@ export function setupTableToggles() {
   });
 }
 
+// Scroll the document so an element sits just below the top. In edit mode the
+// preview scrolls inside its own pane instead of the content wrapper.
+function scrollToElement(element) {
+  const container = contentWrapper.classList.contains('editing') ? markdownContent : contentWrapper;
+  const offset = element.getBoundingClientRect().top - container.getBoundingClientRect().top;
+  container.scrollTo({
+    top: container.scrollTop + offset - 24,
+    behavior: 'smooth'
+  });
+}
+
 // Render outline
 export function renderOutline(outline) {
   if (!outline || outline.length === 0) {
@@ -91,12 +102,7 @@ export function renderOutline(outline) {
       const id = item.getAttribute('data-id');
       const targetElement = document.getElementById(id);
       if (targetElement) {
-        // Scroll to the heading
-        const offsetTop = targetElement.offsetTop - 80; // Offset for header
-        contentWrapper.scrollTo({
-          top: offsetTop,
-          behavior: 'smooth'
-        });
+        scrollToElement(targetElement);
 
         // Update active state
         outlineItems.forEach(i => i.classList.remove('active'));
@@ -125,11 +131,7 @@ async function handleLinkClick(e) {
     const targetId = href.slice(1);
     const targetElement = document.getElementById(targetId);
     if (targetElement) {
-      const offsetTop = targetElement.offsetTop - 80;
-      contentWrapper.scrollTo({
-        top: offsetTop,
-        behavior: 'smooth'
-      });
+      scrollToElement(targetElement);
     }
     return;
   }

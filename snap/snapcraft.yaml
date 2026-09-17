@@ -30,6 +30,7 @@ parts:
       - nodejs
     override-build: |
       npm install
+      npm run bundle:editor
       npx electron-builder --linux dir
       cp -r dist/linux-*-unpacked/* $SNAPCRAFT_PART_INSTALL/
     stage-packages:

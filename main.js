@@ -16,6 +16,14 @@ const headless = process.env.MARKDOWN_VIEWER_HEADLESS === '1';
 // Map of file path -> { watcher, debounceTimer }
 const fileWatchers = new Map();
 
+// Paths of documents currently open in a tab. save-file only writes to these,
+// so the channel cannot be used to write arbitrary files.
+const openDocuments = new Set();
+
+// Number of tabs with unsaved edits, reported by the renderer. The window close
+// confirmation reads it.
+let unsavedCount = 0;
+
 // Handle file opening on macOS
 app.on('open-file', (event, filePath) => {
   event.preventDefault();
@@ -136,6 +144,27 @@ function createWindow() {
     });
   }
 
+  // Confirm before discarding unsaved edits. The handler must decide
+  // synchronously, so it uses the synchronous message box.
+  mainWindow.on('close', (event) => {
+    if (unsavedCount === 0) return;
+    const response = dialog.showMessageBoxSync(mainWindow, {
+      type: 'warning',
+      buttons: ['Discard and Close', 'Cancel'],
+      defaultId: 1,
+      cancelId: 1,
+      message: unsavedCount === 1
+        ? 'A document has unsaved changes.'
+        : `${unsavedCount} documents have unsaved changes.`,
+      detail: 'Closing the window discards them.'
+    });
+    if (response === 1) {
+      event.preventDefault();
+    } else {
+      unsavedCount = 0;
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -227,10 +256,9 @@ function resolveImageSrc(src, filePath) {
   return pathToFileURL(absolute).href;
 }
 
-// Parse a markdown file and return the rendered data
-async function parseMarkdownFile(filePath) {
-  const content = await fs.readFile(filePath, 'utf-8');
-
+// Render markdown text to HTML and extract its outline. filePath is the
+// document the text belongs to; relative image paths resolve against it.
+function parseMarkdown(content, filePath) {
   // Track heading IDs to handle duplicates
   const headingIds = {};
 
@@ -329,12 +357,17 @@ async function parseMarkdownFile(filePath) {
   // Extract headings for outline
   const outline = extractOutline(html);
 
+  return { html, outline };
+}
+
+// Read and parse a markdown file and return the rendered data
+async function parseMarkdownFile(filePath) {
+  const content = await fs.readFile(filePath, 'utf-8');
   return {
-    html,
+    ...parseMarkdown(content, filePath),
     markdown: content,
     filePath,
-    fileName: path.basename(filePath),
-    outline
+    fileName: path.basename(filePath)
   };
 }
 
@@ -342,6 +375,7 @@ async function loadMarkdownFile(filePath, setupWatcher = true) {
   try {
     const data = await parseMarkdownFile(filePath);
 
+    openDocuments.add(filePath);
     mainWindow.webContents.send('load-markdown', data);
 
     // Set up file watcher
@@ -468,6 +502,7 @@ ipcMain.handle('copy-to-clipboard', async (event, text) => {
 ipcMain.handle('open-file-in-tab', async (event, filePath) => {
   try {
     const data = await parseMarkdownFile(filePath);
+    openDocuments.add(filePath);
     watchFile(filePath);
     return { success: true, ...data };
   } catch (error) {
@@ -478,8 +513,59 @@ ipcMain.handle('open-file-in-tab', async (event, filePath) => {
 
 // Handle closing a tab (stop watching the file)
 ipcMain.handle('close-tab', async (event, filePath) => {
+  openDocuments.delete(filePath);
   unwatchFile(filePath);
   return true;
+});
+
+// Render edited text for the edit-mode preview, with the parser used for files.
+ipcMain.handle('render-markdown', async (event, filePath, markdown) => {
+  return parseMarkdown(String(markdown ?? ''), filePath);
+});
+
+// Write edited text to an open document and return the parsed result.
+ipcMain.handle('save-file', async (event, filePath, markdown) => {
+  if (!openDocuments.has(filePath)) {
+    return { success: false, error: 'The file is not open in a tab.' };
+  }
+  const content = String(markdown ?? '');
+  try {
+    await fs.writeFile(filePath, content, 'utf-8');
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+  return { success: true, ...parseMarkdown(content, filePath), markdown: content };
+});
+
+// The renderer reports how many tabs have unsaved edits.
+ipcMain.handle('set-unsaved-count', async (event, count) => {
+  unsavedCount = Number(count) || 0;
+});
+
+// Ask what to do with a modified tab being closed: 'save', 'discard', or 'cancel'.
+ipcMain.handle('confirm-close-modified', async (event, fileName) => {
+  const { response } = await dialog.showMessageBox(mainWindow, {
+    type: 'warning',
+    buttons: ['Save', "Don't Save", 'Cancel'],
+    defaultId: 0,
+    cancelId: 2,
+    message: `Save changes to ${fileName}?`,
+    detail: 'Your changes are lost if you don\'t save them.'
+  });
+  return ['save', 'discard', 'cancel'][response] ?? 'cancel';
+});
+
+// Ask whether to discard a modified tab's edits before reloading: true to discard.
+ipcMain.handle('confirm-discard', async (event, fileName) => {
+  const { response } = await dialog.showMessageBox(mainWindow, {
+    type: 'warning',
+    buttons: ['Discard Changes', 'Cancel'],
+    defaultId: 1,
+    cancelId: 1,
+    message: `Discard unsaved changes to ${fileName}?`,
+    detail: 'The file is reloaded from disk.'
+  });
+  return response === 0;
 });
 
 // Handle resolving a relative link path

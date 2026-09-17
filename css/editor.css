@@ -1,0 +1,82 @@
+/* Edit mode: the content area splits into the editor (left) and the preview
+   (right), each scrolling on its own. */
+.content-wrapper.editing {
+  display: flex;
+  overflow: hidden;
+}
+
+.editor-pane {
+  flex: 1;
+  min-width: 0;
+  margin: 24px 0 24px 24px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  background: var(--bg-primary);
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  /* Map the markdown-editor package's color properties to the app palette. */
+  --md-editor-bg: var(--bg-primary);
+  --md-editor-fg: var(--text-primary);
+  --md-editor-gutter-bg: var(--bg-primary);
+  --md-editor-gutter-fg: var(--text-tertiary);
+  --md-editor-active-line: var(--bg-secondary);
+  --md-editor-caret: var(--primary-color);
+  --md-editor-selection: color-mix(in srgb, var(--primary-color) 25%, transparent);
+}
+
+.editor-instance {
+  height: 100%;
+}
+
+.content-wrapper.editing .markdown-content,
+.content-wrapper.editing.a4-mode .markdown-content {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+  min-height: 0;
+  margin: 24px;
+  overflow-y: auto;
+}
+
+/* Modified-document marker in the tab bar */
+.tab-item-modified {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+/* Banners above the content area */
+.edit-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.edit-banner.error {
+  background: color-mix(in srgb, #d32f2f 15%, var(--bg-primary));
+}
+
+.edit-banner-message {
+  flex: 1;
+}
+
+.edit-banner-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.edit-banner-btn:hover {
+  background: var(--bg-secondary);
+}

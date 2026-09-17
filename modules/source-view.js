@@ -23,7 +23,8 @@ export function updateSourceToggleUI(tab) {
 export function handleToggleSource() {
   if (!tabManager.activeTabId) return;
   const tab = tabManager.tabs.get(tabManager.activeTabId);
-  if (!tab) return;
+  // In edit mode the editor already shows the source.
+  if (!tab || tab.editMode) return;
 
   tab.sourceView = !tab.sourceView;
   renderActiveTabContent(tab);

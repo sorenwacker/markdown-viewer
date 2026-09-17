@@ -10,6 +10,11 @@ exports.test = base.extend({
       env: { ...process.env, MARKDOWN_VIEWER_HEADLESS: headless ? '1' : '0' },
     });
     await use(electronApp);
+    // A test that ends with unsaved edits would otherwise block quitting on the
+    // window-close confirmation; answer it with "discard".
+    await electronApp.evaluate(({ dialog }) => {
+      dialog.showMessageBoxSync = () => 0;
+    }).catch(() => {});
     await electronApp.close();
   },
 
