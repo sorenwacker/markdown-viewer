@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0-rc.2] - 2026-09-17
+
+### Fixed
+- Release builds no longer fail on tags: electron-builder published implicitly without permission (also the cause of the failed v1.2.0 release run)
+- Release candidate tags are published as prereleases
+
 ## [1.4.0-rc.1] - 2026-09-17
 
 ### Added
