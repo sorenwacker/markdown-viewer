@@ -63,5 +63,7 @@ jobs:
         with:
           files: artifacts/**/*
           generate_release_notes: true
+          # Release candidates (vX.Y.Z-rc.N) must not become the latest release.
+          prerelease: ${{ contains(github.ref_name, '-rc') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
