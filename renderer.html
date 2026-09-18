@@ -89,6 +89,13 @@
           </button>
         </div>
         <div class="header-actions">
+          <button id="exportPdfBtn" class="icon-btn" title="Export as PDF (Cmd+P)" style="display: none;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
           <button id="saveBtn" class="icon-btn" title="Save (Cmd+S)" style="display: none;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -177,6 +184,10 @@
         <span class="edit-banner-message">This file changed on disk.</span>
         <button id="diskReloadBtn" class="edit-banner-btn">Reload</button>
         <button id="diskKeepBtn" class="edit-banner-btn">Keep Mine</button>
+      </div>
+      <div id="exportErrorBanner" class="edit-banner error" style="display: none;">
+        <span id="exportErrorMessage" class="edit-banner-message"></span>
+        <button id="exportErrorDismissBtn" class="edit-banner-btn">Dismiss</button>
       </div>
       <div id="saveErrorBanner" class="edit-banner error" style="display: none;">
         <span id="saveErrorMessage" class="edit-banner-message"></span>

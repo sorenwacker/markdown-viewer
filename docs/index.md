@@ -10,6 +10,7 @@ A cross-platform Electron-based markdown viewer for macOS, Windows, and Linux.
 
 - [README](../README.md) — features, installation, usage, and keyboard shortcuts.
 - [Edit mode](editing.md) — editing and saving documents, unsaved-change handling, and the shared editor package.
+- [Exporting](exporting.md) — exporting a document as PDF.
 - [Codebase review](REVIEW.md) — baseline gates, confirmed findings, and remediation status.
 
 ## At a glance
@@ -17,6 +18,7 @@ A cross-platform Electron-based markdown viewer for macOS, Windows, and Linux.
 - Clean, distraction-free markdown viewing with in-document search.
 - Toggle between the rendered document and its raw markdown source, remembered per tab.
 - Edit a document next to a live preview and save it back to its file.
+- Export a document as PDF, with diagrams, on A4 pages.
 - Copy the raw markdown source of the active document to the clipboard.
 - Mermaid diagrams and syntax-highlighted code blocks.
 - Embedded images: external (`http`/`https`), `data:`, and local files.

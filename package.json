@@ -32,6 +32,9 @@
       "styles.css",
       "css/**/*.css",
       "renderer.js",
+      "print-preload.js",
+      "print.js",
+      "print.html",
       "modules/**/*.js",
       "vendor/**/*.js",
       "node_modules/dompurify/dist/purify.min.js",
@@ -120,6 +123,7 @@
     "electron-builder": "^26.6.0",
     "esbuild": "^0.25.12",
     "eslint": "^9.39.2",
+    "pdfjs-dist": "^5.7.284",
     "playwright": "^1.57.0"
   },
   "dependencies": {

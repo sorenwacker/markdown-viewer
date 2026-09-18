@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setUnsavedCount: (count) => ipcRenderer.invoke('set-unsaved-count', count),
   confirmCloseModified: (fileName) => ipcRenderer.invoke('confirm-close-modified', fileName),
   confirmDiscard: (fileName) => ipcRenderer.invoke('confirm-discard', fileName),
+  exportPdf: (filePath, fileName, html) => ipcRenderer.invoke('export-pdf', filePath, fileName, html),
   onSaveAllRequested: (callback) => ipcRenderer.on('save-all-requested', callback),
   saveAllFinished: (saved) => ipcRenderer.invoke('save-all-finished', saved)
 });

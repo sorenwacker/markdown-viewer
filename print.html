@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; img-src 'self' data: file: http: https:">
+  <title>Export</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/print.css">
+</head>
+<body>
+  <div id="printContent" class="markdown-content"></div>
+  <script src="./node_modules/dompurify/dist/purify.min.js"></script>
+  <script src="./node_modules/mermaid/dist/mermaid.min.js"></script>
+  <script type="module" src="print.js"></script>
+</body>
+</html>

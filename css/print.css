@@ -1,0 +1,49 @@
+/* The export page: the document alone, on paper. Loaded only by print.html,
+   after the app stylesheet, so it overrides the on-screen chrome. */
+@page {
+  margin: 18mm 16mm;
+}
+
+body {
+  height: auto;
+  overflow: visible;
+  background: #ffffff;
+}
+
+#printContent.markdown-content {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #ffffff;
+  font-size: 11pt;
+}
+
+/* Keep blocks whole across page breaks where it matters. */
+#printContent h1,
+#printContent h2,
+#printContent h3,
+#printContent h4 {
+  break-after: avoid;
+}
+
+#printContent pre,
+#printContent table,
+#printContent blockquote,
+#printContent .mermaid {
+  break-inside: avoid;
+}
+
+#printContent img,
+#printContent .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Tables are scroll containers on screen; on paper they are plain tables. */
+#printContent .table-wrapper {
+  overflow: visible;
+}
