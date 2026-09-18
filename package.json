@@ -1,6 +1,6 @@
 {
   "name": "markdown-viewer",
-  "version": "1.4.0-rc.5",
+  "version": "1.4.0",
   "description": "A cross-platform Electron markdown viewer",
   "main": "main.js",
   "scripts": {

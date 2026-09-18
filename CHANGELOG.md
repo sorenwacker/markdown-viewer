@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-18
+
+### Added
+- Edit mode (Cmd/Ctrl+E): a per-tab split view with a markdown editor and a live preview, with the editor coming from the shared markdown-editor package
+- Save button in the header and Cmd/Ctrl+S; documents with unsaved changes are marked in the header and tab bar
+- Confirmation before unsaved changes are lost when closing a tab, reloading, or quitting, with Save All on quit
+- Banner when a file open for editing changes on disk, offering Reload or Keep Mine
+
+### Changed
+- Tests run without showing app windows; `npm run test:headed` shows them
+
+### Fixed
+- Release builds failed on every tag because electron-builder published implicitly without permission
+- Release candidate tags are published as prereleases
+
 ## [1.4.0-rc.5] - 2026-09-18
 
 ### Fixed
