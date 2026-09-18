@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0-rc.5] - 2026-09-18
+
+### Fixed
+- Selecting text in the editor showed no highlight: CodeMirror's selection layer was painted behind the editor background, and the opaque active-line color covered the selection on the line being selected (markdown-editor v1.0.2)
+
 ## [1.4.0-rc.4] - 2026-09-18
 
 ### Added

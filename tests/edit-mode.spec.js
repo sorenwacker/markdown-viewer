@@ -381,8 +381,78 @@ test.describe('Edit mode: highlight visibility', () => {
     }, selector);
   }
 
+  // Average color of a screen region, captured from the real window. Computed
+  // styles are not enough: a correctly coloured selection layer can still be
+  // painted behind the editor background and never appear.
+  async function averageColor(electronApp, rect) {
+    return electronApp.evaluate(async ({ BrowserWindow }, area) => {
+      const image = await BrowserWindow.getAllWindows()[0].webContents.capturePage({
+        x: Math.round(area.x), y: Math.round(area.y),
+        width: Math.round(area.width), height: Math.round(area.height),
+      });
+      const { width, height } = image.getSize();
+      const bitmap = image.toBitmap(); // BGRA
+      let b = 0, g = 0, r = 0;
+      for (let i = 0; i < bitmap.length; i += 4) {
+        b += bitmap[i]; g += bitmap[i + 1]; r += bitmap[i + 2];
+      }
+      const pixels = width * height;
+      return { r: r / pixels, g: g / pixels, b: b / pixels };
+    }, rect);
+  }
+
+  // Select the given line with the mouse, as a user does.
+  async function dragSelectLine(window, lineIndex) {
+    const line = window.locator('#editorPane .cm-line').nth(lineIndex);
+    const box = await line.boundingBox();
+    await window.mouse.move(box.x + 4, box.y + box.height / 2);
+    await window.mouse.down();
+    await window.mouse.move(box.x + box.width * 0.6, box.y + box.height / 2, { steps: 15 });
+    await window.mouse.up();
+    return box;
+  }
+
   for (const dark of [false, true]) {
-    test(`the selection is visible in ${dark ? 'dark' : 'light'} mode`, async ({ electronApp, window }) => {
+    test(`a mouse selection is painted in ${dark ? 'dark' : 'light'} mode`, async ({ electronApp, window }) => {
+      await openFile(electronApp, window, tempMarkdownFile('# Title\n\nSelect this sentence here.\n'));
+      await window.evaluate((d) => document.body.classList.toggle('dark-mode', d), dark);
+      await window.keyboard.press('ControlOrMeta+E');
+      await expect(editor(window)).toBeVisible();
+
+      const box = await window.locator('#editorPane .cm-line').nth(2).boundingBox();
+      const region = { x: box.x + 4, y: box.y + 2, width: box.width * 0.5, height: box.height - 4 };
+      const before = await averageColor(electronApp, region);
+
+      await dragSelectLine(window, 2);
+      await expect(window.locator('.cm-selectionBackground')).toHaveCount(1);
+      const after = await averageColor(electronApp, region);
+
+      // The selected text must look different from the unselected text.
+      const difference = Math.abs(after.r - before.r) + Math.abs(after.g - before.g) + Math.abs(after.b - before.b);
+      expect(difference, `selection changed the pixels by ${difference.toFixed(1)}`).toBeGreaterThan(30);
+    });
+  }
+
+  // The active line is painted over the selection layer, so an opaque color
+  // there hides the selection on the very line being selected.
+  test('the active line highlight is translucent', async ({ electronApp, window }) => {
+    await openFile(electronApp, window, tempMarkdownFile('# Title\n\nBody text.\n'));
+    await window.keyboard.press('ControlOrMeta+E');
+    await expect(editor(window)).toBeVisible();
+
+    for (const dark of [false, true]) {
+      await window.evaluate((d) => document.body.classList.toggle('dark-mode', d), dark);
+      const alpha = await window.evaluate(() => {
+        const value = getComputedStyle(document.querySelector('.cm-activeLine')).backgroundColor;
+        const parts = [...value.matchAll(/[\d.]+/g)].map(m => Number(m[0]));
+        return parts.length > 3 ? parts[3] : 1;
+      });
+      expect(alpha, `active line in ${dark ? 'dark' : 'light'} mode`).toBeLessThan(0.5);
+    }
+  });
+
+  for (const dark of [false, true]) {
+    test(`the selection color has enough contrast in ${dark ? 'dark' : 'light'} mode`, async ({ electronApp, window }) => {
       await openFile(electronApp, window, tempMarkdownFile('# Title\n\nSelect this sentence here.\n'));
       await window.evaluate((d) => document.body.classList.toggle('dark-mode', d), dark);
       await window.keyboard.press('ControlOrMeta+e');

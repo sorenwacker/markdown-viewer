@@ -1,6 +1,6 @@
 {
   "name": "markdown-viewer",
-  "version": "1.4.0-rc.4",
+  "version": "1.4.0-rc.5",
   "description": "A cross-platform Electron markdown viewer",
   "main": "main.js",
   "scripts": {
@@ -124,7 +124,7 @@
   },
   "dependencies": {
     "dompurify": "^3.4.10",
-    "markdown-editor": "github:sorenwacker/markdown-editor#v1.0.1",
+    "markdown-editor": "github:sorenwacker/markdown-editor#v1.0.2",
     "marked": "^11.0.0",
     "mermaid": "^11.12.1"
   }

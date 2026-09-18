@@ -22,9 +22,11 @@
   --md-editor-fg: var(--text-primary);
   --md-editor-gutter-bg: var(--bg-primary);
   --md-editor-gutter-fg: var(--text-tertiary);
-  --md-editor-active-line: var(--bg-secondary);
+  /* Translucent: the active line is painted over the selection layer, so an
+     opaque color hides the selection on the line being selected. */
+  --md-editor-active-line: rgba(0, 0, 0, 0.04);
   --md-editor-caret: var(--primary-color);
-  --md-editor-selection: rgba(0, 102, 204, 0.42);
+  --md-editor-selection: rgba(0, 102, 204, 0.55);
   --md-editor-selection-match: rgba(214, 137, 0, 0.3);
   --md-editor-search-match: rgba(214, 137, 0, 0.35);
   --md-editor-search-match-selected: rgba(255, 120, 0, 0.55);
@@ -34,6 +36,7 @@
 }
 
 body.dark-mode .editor-pane {
+  --md-editor-active-line: rgba(255, 255, 255, 0.07);
   --md-editor-selection: rgba(10, 132, 255, 0.55);
   --md-editor-selection-match: rgba(255, 200, 60, 0.32);
   --md-editor-search-match: rgba(255, 200, 60, 0.35);
