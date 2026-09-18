@@ -32,19 +32,27 @@ async function pdfText(target) {
 // Wait for the export to finish writing a PDF that can be read back. A file
 // size threshold would only guess at that; parsing it is the real condition.
 async function waitForFile(target, window) {
+  let lastReadError = '';
   try {
     await expect.poll(async () => {
       if (!fs.existsSync(target)) return false;
       try {
         return (await pdfText(target)).length > 0;
-      } catch {
+      } catch (error) {
+        // Keep the reason: a PDF that cannot be read is not the same failure
+        // as a PDF that was never written.
+        lastReadError = error.message;
         return false;
       }
     }, { timeout: 20000 }).toBe(true);
   } catch (error) {
-    // Report what the app said rather than only that no file appeared.
     const banner = window && await window.locator('#exportErrorMessage').textContent().catch(() => '');
-    throw new Error(`${error.message}\nApp reported: ${banner || '(no error shown)'}`);
+    throw new Error([
+      error.message,
+      `App reported: ${banner || '(no error shown)'}`,
+      `File exists: ${fs.existsSync(target)}`,
+      lastReadError ? `Reading the PDF failed: ${lastReadError}` : ''
+    ].filter(Boolean).join('\n'));
   }
 }
 

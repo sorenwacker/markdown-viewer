@@ -131,5 +131,8 @@
     "markdown-editor": "github:sorenwacker/markdown-editor#v1.0.2",
     "marked": "^11.0.0",
     "mermaid": "^11.12.1"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
