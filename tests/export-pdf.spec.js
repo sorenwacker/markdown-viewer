@@ -17,12 +17,6 @@ async function answerSaveDialog(electronApp, filePath) {
 const savedOptions = (electronApp) => electronApp.evaluate(() => globalThis.__lastSaveOptions);
 const outPath = (name) => path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mv-pdf-')), name);
 
-// Wait for the export to finish writing.
-async function waitForFile(target) {
-  await expect.poll(() => fs.existsSync(target), { timeout: 20000 }).toBe(true);
-  await expect.poll(() => fs.statSync(target).size, { timeout: 20000 }).toBeGreaterThan(1000);
-}
-
 // The text of every page of a PDF, as the reader sees it.
 async function pdfText(target) {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
@@ -33,6 +27,19 @@ async function pdfText(target) {
     text += content.items.map(item => item.str).join(' ') + '\n';
   }
   return text;
+}
+
+// Wait for the export to finish writing a PDF that can be read back. A file
+// size threshold would only guess at that; parsing it is the real condition.
+async function waitForFile(target) {
+  await expect.poll(async () => {
+    if (!fs.existsSync(target)) return false;
+    try {
+      return (await pdfText(target)).length > 0;
+    } catch {
+      return false;
+    }
+  }, { timeout: 20000 }).toBe(true);
 }
 
 test.describe('Export as PDF', () => {

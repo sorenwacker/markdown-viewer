@@ -25,6 +25,7 @@ module.exports = [
         document: 'readonly',
         localStorage: 'readonly',
         getComputedStyle: 'readonly',
+        requestAnimationFrame: 'readonly',
         NodeFilter: 'readonly',
         KeyboardEvent: 'readonly',
         MutationObserver: 'readonly',

@@ -31,6 +31,9 @@ window.printAPI.onContent(async (_event, html) => {
 
     const diagrams = await renderDiagrams(container);
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    // Let the page lay out and paint what was just inserted; printing before
+    // that can capture a page that is still empty.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     window.printAPI.ready({ diagrams });
   } catch (error) {
