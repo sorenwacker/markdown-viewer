@@ -26,6 +26,7 @@ module.exports = [
         localStorage: 'readonly',
         getComputedStyle: 'readonly',
         requestAnimationFrame: 'readonly',
+        Promise: 'readonly',
         NodeFilter: 'readonly',
         KeyboardEvent: 'readonly',
         MutationObserver: 'readonly',
