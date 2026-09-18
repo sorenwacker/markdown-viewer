@@ -1,12 +1,18 @@
 const { test: base, _electron: electron } = require('@playwright/test');
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 exports.test = base.extend({
   // Playwright's headless option (false with --headed) decides whether the app
   // shows its window.
   electronApp: async ({ headless }, use) => {
+    // Every launch gets its own user data directory. Sharing one made launches
+    // contend for the same profile lock, which failed a launch outright now and
+    // then ("Process failed to launch!").
+    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mv-profile-'));
     const electronApp = await electron.launch({
-      args: [path.join(__dirname, '../main.js')],
+      args: [path.join(__dirname, '../main.js'), `--user-data-dir=${userDataDir}`],
       env: { ...process.env, MARKDOWN_VIEWER_HEADLESS: headless ? '1' : '0' },
     });
     await use(electronApp);
@@ -17,6 +23,7 @@ exports.test = base.extend({
       dialog.showMessageBoxSync = () => 1;
     }).catch(() => {});
     await electronApp.close();
+    fs.rmSync(userDataDir, { recursive: true, force: true });
   },
 
   window: async ({ electronApp }, use) => {
