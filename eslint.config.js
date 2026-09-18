@@ -1,7 +1,7 @@
 module.exports = [
   {
     files: ['**/*.js'],
-    ignores: ['node_modules/**', 'dist/**', 'test-results/**'],
+    ignores: ['node_modules/**', 'dist/**', 'test-results/**', 'vendor/**'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',
@@ -24,8 +24,10 @@ module.exports = [
         window: 'readonly',
         document: 'readonly',
         localStorage: 'readonly',
+        getComputedStyle: 'readonly',
         NodeFilter: 'readonly',
         KeyboardEvent: 'readonly',
+        MutationObserver: 'readonly',
         // Electron
         mermaid: 'readonly',
       },
@@ -45,7 +47,7 @@ module.exports = [
   {
     // The renderer is delivered as an ES module (renderer.html loads it with
     // type="module"); main/preload and the test/config files stay CommonJS.
-    files: ['renderer.js', 'modules/**/*.js'],
+    files: ['renderer.js', 'modules/**/*.js', 'scripts/editor-entry.js'],
     languageOptions: {
       sourceType: 'module',
     },

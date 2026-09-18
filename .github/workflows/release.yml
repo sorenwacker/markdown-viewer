@@ -28,10 +28,10 @@ jobs:
 
       - run: npm ci
 
+      # Build only. electron-builder otherwise publishes implicitly on a tag,
+      # which this job has no permission for; the release job publishes.
       - name: Build
-        run: npm run build:${{ matrix.platform }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build:${{ matrix.platform }} -- --publish never
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -63,5 +63,7 @@ jobs:
         with:
           files: artifacts/**/*
           generate_release_notes: true
+          # Release candidates (vX.Y.Z-rc.N) must not become the latest release.
+          prerelease: ${{ contains(github.ref_name, '-rc') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,11 +2,20 @@ const { test: base, _electron: electron } = require('@playwright/test');
 const path = require('path');
 
 exports.test = base.extend({
-  electronApp: async ({}, use) => {
+  // Playwright's headless option (false with --headed) decides whether the app
+  // shows its window.
+  electronApp: async ({ headless }, use) => {
     const electronApp = await electron.launch({
       args: [path.join(__dirname, '../main.js')],
+      env: { ...process.env, MARKDOWN_VIEWER_HEADLESS: headless ? '1' : '0' },
     });
     await use(electronApp);
+    // A test that ends with unsaved edits would otherwise block quitting on the
+    // window-close confirmation; answer it with "Don't Save".
+    await electronApp.evaluate(({ dialog }) => {
+      dialog.showMessageBox = async () => ({ response: 1 });
+      dialog.showMessageBoxSync = () => 1;
+    }).catch(() => {});
     await electronApp.close();
   },
 

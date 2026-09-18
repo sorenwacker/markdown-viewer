@@ -14,5 +14,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Tab support
   openFileInTab: (filePath) => ipcRenderer.invoke('open-file-in-tab', filePath),
   closeTab: (filePath) => ipcRenderer.invoke('close-tab', filePath),
-  resolveLink: (basePath, linkPath) => ipcRenderer.invoke('resolve-link', basePath, linkPath)
+  resolveLink: (basePath, linkPath) => ipcRenderer.invoke('resolve-link', basePath, linkPath),
+  // Edit mode
+  renderMarkdown: (filePath, markdown) => ipcRenderer.invoke('render-markdown', filePath, markdown),
+  saveFile: (filePath, markdown) => ipcRenderer.invoke('save-file', filePath, markdown),
+  setUnsavedCount: (count) => ipcRenderer.invoke('set-unsaved-count', count),
+  confirmCloseModified: (fileName) => ipcRenderer.invoke('confirm-close-modified', fileName),
+  confirmDiscard: (fileName) => ipcRenderer.invoke('confirm-discard', fileName),
+  onSaveAllRequested: (callback) => ipcRenderer.on('save-all-requested', callback),
+  saveAllFinished: (saved) => ipcRenderer.invoke('save-all-finished', saved)
 });

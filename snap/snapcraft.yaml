@@ -1,5 +1,5 @@
 name: markdown-viewer
-version: '1.1.0'
+version: '1.4.0'
 summary: A cross-platform markdown viewer
 description: |
   A beautiful way to read and navigate your markdown files.
@@ -30,6 +30,7 @@ parts:
       - nodejs
     override-build: |
       npm install
+      npm run bundle:editor
       npx electron-builder --linux dir
       cp -r dist/linux-*-unpacked/* $SNAPCRAFT_PART_INSTALL/
     stage-packages:

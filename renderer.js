@@ -4,17 +4,20 @@
 import {
   sidebar, sidebarToggleMain, reloadBtn, supportLink, filesTab, outlineTab,
   openFileBtn, welcomeOpenFileBtn, openFolderBtn, welcomeOpenFolderBtn,
-  markdownContent, welcomeScreen, contentWrapper,
+  markdownContent, welcomeScreen,
 } from './modules/dom.js';
 import { escapeHtml } from './modules/html.js';
 import { state, tabManager } from './modules/state.js';
 import {
-  createTab, switchToTab, closeTab, getNextTabId, findTabByPath, renderActiveTabContent,
+  createTab, switchToTab, closeTab, getNextTabId, findTabByPath,
 } from './modules/tabs.js';
 import { addToRecentDocuments, renderRecentDocuments } from './modules/recent.js';
 import { handleOpenFile, handleOpenFolder, renderFileTree } from './modules/filetree.js';
 import { handleCopySource } from './modules/copy.js';
 import { handleToggleSource } from './modules/source-view.js';
+import {
+  handleToggleEdit, handleSave, applyDiskChange, confirmDiscard, loadDiskContent,
+} from './modules/edit-mode.js';
 import { openSearch } from './modules/search.js';
 import './modules/prefs.js';
 
@@ -37,19 +40,13 @@ async function handleReload() {
     renderRecentDocuments();
   }
 
-  // Reload the active tab content
+  // Reload the active tab content, discarding unsaved edits only if confirmed
   if (tabManager.activeTabId && state.currentFile) {
-    const result = await window.electronAPI.openFileInTab(state.currentFile);
+    const tab = tabManager.tabs.get(tabManager.activeTabId);
+    if (!tab || !(await confirmDiscard(tab))) return;
+    const result = await window.electronAPI.openFileInTab(tab.filePath);
     if (result.success) {
-      const tab = tabManager.tabs.get(tabManager.activeTabId);
-      if (tab) {
-        const scrollTop = contentWrapper.scrollTop;
-        tab.html = result.html;
-        tab.markdown = result.markdown;
-        tab.outline = result.outline;
-        renderActiveTabContent(tab);
-        contentWrapper.scrollTop = scrollTop;
-      }
+      loadDiskContent(tab, result);
     }
   }
 }
@@ -65,17 +62,7 @@ window.electronAPI.onFileChanged((_event, data) => {
   const tab = tabManager.tabs.get(tabId);
   if (!tab) return;
 
-  // Update tab data
-  tab.html = data.html;
-  tab.markdown = data.markdown;
-  tab.outline = data.outline;
-
-  // If this is the active tab, update the display
-  if (tabId === tabManager.activeTabId) {
-    const scrollTop = contentWrapper.scrollTop;
-    renderActiveTabContent(tab);
-    contentWrapper.scrollTop = scrollTop;
-  }
+  applyDiskChange(tab, data);
 });
 
 // Toggle sidebar
@@ -148,8 +135,8 @@ window.electronAPI.onLoadError((event, errorMessage) => {
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
-  // Cmd/Ctrl + F: Open search
-  if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+  // Cmd/Ctrl + F: Open search (inside the editor, the editor's own find panel)
+  if ((e.metaKey || e.ctrlKey) && e.key === 'f' && !e.target.closest?.('.cm-editor')) {
     e.preventDefault();
     openSearch();
   }
@@ -182,6 +169,18 @@ document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 's' || e.key === 'S')) {
     e.preventDefault();
     handleToggleSource();
+  }
+
+  // Cmd/Ctrl + E: Toggle edit mode
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'e' || e.key === 'E')) {
+    e.preventDefault();
+    handleToggleEdit();
+  }
+
+  // Cmd/Ctrl + S: Save the active document
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 's' || e.key === 'S')) {
+    e.preventDefault();
+    handleSave();
   }
 
   // Cmd/Ctrl + R: Reload file

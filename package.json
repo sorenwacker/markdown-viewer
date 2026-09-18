@@ -1,17 +1,24 @@
 {
   "name": "markdown-viewer",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "A cross-platform Electron markdown viewer",
   "main": "main.js",
   "scripts": {
+    "bundle:editor": "esbuild scripts/editor-entry.js --bundle --format=esm --minify --log-level=warning --outfile=vendor/markdown-editor.js",
+    "prestart": "npm run bundle:editor",
     "start": "electron .",
+    "pretest": "npm run bundle:editor",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "prebuild": "npm run bundle:editor",
     "build": "electron-builder",
+    "prebuild:mac": "npm run bundle:editor",
     "build:mac": "electron-builder --mac",
+    "prebuild:win": "npm run bundle:editor",
     "build:win": "electron-builder --win",
+    "prebuild:linux": "npm run bundle:editor",
     "build:linux": "electron-builder --linux"
   },
   "build": {
@@ -26,6 +33,7 @@
       "css/**/*.css",
       "renderer.js",
       "modules/**/*.js",
+      "vendor/**/*.js",
       "node_modules/dompurify/dist/purify.min.js",
       "node_modules/mermaid/dist/mermaid.min.js"
     ],
@@ -110,11 +118,13 @@
     "@playwright/test": "^1.57.0",
     "electron": "^39.2.4",
     "electron-builder": "^26.6.0",
+    "esbuild": "^0.25.12",
     "eslint": "^9.39.2",
     "playwright": "^1.57.0"
   },
   "dependencies": {
     "dompurify": "^3.4.10",
+    "markdown-editor": "github:sorenwacker/markdown-editor#v1.0.2",
     "marked": "^11.0.0",
     "mermaid": "^11.12.1"
   }

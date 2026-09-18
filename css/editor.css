@@ -1,0 +1,100 @@
+/* Edit mode: the content area splits into the editor (left) and the preview
+   (right), each scrolling on its own. */
+.content-wrapper.editing {
+  display: flex;
+  overflow: hidden;
+}
+
+.editor-pane {
+  flex: 1;
+  min-width: 0;
+  margin: 24px 0 24px 24px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  background: var(--bg-primary);
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  /* Map the markdown-editor package's color properties to the app palette.
+     Highlights are translucent layers over the editor background, so their
+     opacity decides whether they read at all; dark mode needs more. */
+  --md-editor-bg: var(--bg-primary);
+  --md-editor-fg: var(--text-primary);
+  --md-editor-gutter-bg: var(--bg-primary);
+  --md-editor-gutter-fg: var(--text-tertiary);
+  /* Translucent: the active line is painted over the selection layer, so an
+     opaque color hides the selection on the line being selected. */
+  --md-editor-active-line: rgba(0, 0, 0, 0.04);
+  --md-editor-caret: var(--primary-color);
+  --md-editor-selection: rgba(0, 102, 204, 0.55);
+  --md-editor-selection-match: rgba(214, 137, 0, 0.3);
+  --md-editor-search-match: rgba(214, 137, 0, 0.35);
+  --md-editor-search-match-selected: rgba(255, 120, 0, 0.55);
+  --md-editor-panel-bg: var(--bg-secondary);
+  --md-editor-panel-fg: var(--text-primary);
+  --md-editor-border: var(--border-color);
+}
+
+body.dark-mode .editor-pane {
+  --md-editor-active-line: rgba(255, 255, 255, 0.07);
+  --md-editor-selection: rgba(10, 132, 255, 0.55);
+  --md-editor-selection-match: rgba(255, 200, 60, 0.32);
+  --md-editor-search-match: rgba(255, 200, 60, 0.35);
+  --md-editor-search-match-selected: rgba(255, 150, 40, 0.6);
+}
+
+.editor-instance {
+  height: 100%;
+}
+
+.content-wrapper.editing .markdown-content,
+.content-wrapper.editing.a4-mode .markdown-content {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+  min-height: 0;
+  margin: 24px;
+  overflow-y: auto;
+}
+
+/* Modified-document marker in the tab bar */
+.tab-item-modified {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+/* Banners above the content area */
+.edit-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.edit-banner.error {
+  background: color-mix(in srgb, #d32f2f 15%, var(--bg-primary));
+}
+
+.edit-banner-message {
+  flex: 1;
+}
+
+.edit-banner-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.edit-banner-btn:hover {
+  background: var(--bg-secondary);
+}

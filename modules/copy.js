@@ -1,7 +1,7 @@
 // Copy the raw markdown source of the active tab to the clipboard, with a brief
 // checkmark confirmation on the button.
 import { copySourceBtn } from './dom.js';
-import { tabManager } from './state.js';
+import { tabManager, currentText } from './state.js';
 
 let copyFeedbackTimer = null;
 
@@ -21,9 +21,10 @@ export function resetCopyFeedback() {
 export async function handleCopySource() {
   if (!tabManager.activeTabId) return;
   const tab = tabManager.tabs.get(tabManager.activeTabId);
-  if (!tab || tab.markdown == null) return;
+  if (!tab || currentText(tab) == null) return;
 
-  await window.electronAPI.copyToClipboard(tab.markdown);
+  // Copy the text as shown, including unsaved edits.
+  await window.electronAPI.copyToClipboard(currentText(tab));
 
   copySourceBtn.querySelector('.copy-icon').style.display = 'none';
   copySourceBtn.querySelector('.copied-icon').style.display = 'block';
