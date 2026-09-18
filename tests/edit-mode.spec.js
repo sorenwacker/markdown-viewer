@@ -261,10 +261,9 @@ test.describe('Edit mode: unsaved changes', () => {
     await answerDialogs(electronApp, 0); // Save All
     await electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
 
-    await expect.poll(
-      () => electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length),
-      { timeout: 10000 }
-    ).toBe(0);
+    // Windows quits the app with its last window; macOS keeps it running. The
+    // window closing is what both have in common.
+    await window.waitForEvent('close', { timeout: 15000 });
     expect(fs.readFileSync(one, 'utf8')).toBe('# One\nfirst edit');
     expect(fs.readFileSync(two, 'utf8')).toBe('# Two\nsecond edit');
   });
@@ -278,10 +277,7 @@ test.describe('Edit mode: unsaved changes', () => {
     await answerDialogs(electronApp, 1); // Don't Save
     await electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
 
-    await expect.poll(
-      () => electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length),
-      { timeout: 10000 }
-    ).toBe(0);
+    await window.waitForEvent('close', { timeout: 15000 });
     expect(fs.readFileSync(file, 'utf8')).toBe('# Title\n');
   });
 });
