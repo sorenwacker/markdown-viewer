@@ -119,11 +119,11 @@
   "license": "MIT",
   "devDependencies": {
     "@playwright/test": "^1.57.0",
-    "electron": "^39.2.4",
+    "electron": "^44.4.2",
     "electron-builder": "^26.6.0",
     "esbuild": "^0.25.12",
     "eslint": "^9.39.2",
-    "pdfjs-dist": "^5.7.284",
+    "pdfjs-dist": "^6.3.289",
     "playwright": "^1.57.0"
   },
   "dependencies": {

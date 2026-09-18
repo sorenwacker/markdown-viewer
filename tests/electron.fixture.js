@@ -21,6 +21,9 @@ exports.test = base.extend({
 
   window: async ({ electronApp }, use) => {
     const window = await electronApp.firstWindow();
+    // The window is handed over before it navigates to the app, so wait for the
+    // page itself; otherwise the navigation destroys the context mid-test.
+    await window.waitForURL(/renderer\.html$/);
     // renderer.js is a synchronous script, so its event/IPC listeners are
     // attached by the time DOMContentLoaded fires. Wait for it so one-shot
     // actions (key presses, IPC sends) are not lost before listeners exist.
