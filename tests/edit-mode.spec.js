@@ -287,3 +287,64 @@ test.describe('Edit mode: main process', () => {
     await expect.poll(() => editor(window).getAttribute('class')).not.toBe(before);
   });
 });
+
+test.describe('Edit mode: highlight visibility', () => {
+  // Highlights are translucent layers over the editor background. A layer that
+  // is too faint leaves selected text looking unselected, which is what the
+  // editor's first dark mode did.
+  const MIN_CONTRAST = 1.8;
+
+  // Contrast ratio between a highlight composited over the editor background
+  // and that background, measured from the live computed styles.
+  async function highlightContrast(window, selector) {
+    return window.evaluate((sel) => {
+      const parse = (value) => {
+        const [r, g, b, a = 1] = [...value.matchAll(/[\d.]+/g)].map(m => Number(m[0]));
+        return value.startsWith('color(') ? [r * 255, g * 255, b * 255, a] : [r, g, b, a];
+      };
+      const luminance = ([r, g, b]) => {
+        const channel = (c) => {
+          const v = c / 255;
+          return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      };
+      const pane = document.getElementById('editorPane');
+      const background = parse(getComputedStyle(pane).backgroundColor);
+      const layer = parse(getComputedStyle(document.querySelector(sel)).backgroundColor);
+      const composited = [0, 1, 2].map(i => layer[i] * layer[3] + background[i] * (1 - layer[3]));
+      const [light, dark] = [luminance(composited), luminance(background)].sort((a, b) => b - a);
+      return (light + 0.05) / (dark + 0.05);
+    }, selector);
+  }
+
+  for (const dark of [false, true]) {
+    test(`the selection is visible in ${dark ? 'dark' : 'light'} mode`, async ({ electronApp, window }) => {
+      await openFile(electronApp, window, tempMarkdownFile('# Title\n\nSelect this sentence here.\n'));
+      await window.evaluate((d) => document.body.classList.toggle('dark-mode', d), dark);
+      await window.keyboard.press('ControlOrMeta+e');
+      await editor(window).locator('.cm-content').click();
+      await window.keyboard.press('ControlOrMeta+a');
+      await expect(window.locator('.cm-selectionBackground').first()).toBeVisible();
+
+      expect(await highlightContrast(window, '.cm-selectionBackground')).toBeGreaterThan(MIN_CONTRAST);
+    });
+  }
+
+  test('other occurrences of the selected text are marked without hiding them', async ({ electronApp, window }) => {
+    await openFile(electronApp, window, tempMarkdownFile('# Title\n\nSelect this sentence here.\n\nAnother sentence again.\n'));
+    await window.evaluate(() => document.body.classList.add('dark-mode'));
+    await window.keyboard.press('ControlOrMeta+e');
+    await window.getByText('Select this sentence here.').first().dblclick();
+    await expect(window.locator('.cm-selectionMatch').first()).toBeVisible();
+
+    // Visible against the background, and translucent so the text shows through.
+    expect(await highlightContrast(window, '.cm-selectionMatch')).toBeGreaterThan(1.2);
+    const alpha = await window.evaluate(() => {
+      const value = getComputedStyle(document.querySelector('.cm-selectionMatch')).backgroundColor;
+      const parts = [...value.matchAll(/[\d.]+/g)].map(m => Number(m[0]));
+      return parts.length > 3 ? parts[3] : 1;
+    });
+    expect(alpha).toBeLessThan(0.5);
+  });
+});

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0-rc.3] - 2026-09-18
+
+### Fixed
+- Editor selection was nearly invisible in dark mode, and CodeMirror's default green match and magenta search highlights hid the text under them; all highlights are now translucent layers over the editor background, and the find panel follows the app theme (markdown-editor v1.0.1)
+
 ## [1.4.0-rc.2] - 2026-09-17
 
 ### Fixed

@@ -15,14 +15,29 @@
   overflow: hidden;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
-  /* Map the markdown-editor package's color properties to the app palette. */
+  /* Map the markdown-editor package's color properties to the app palette.
+     Highlights are translucent layers over the editor background, so their
+     opacity decides whether they read at all; dark mode needs more. */
   --md-editor-bg: var(--bg-primary);
   --md-editor-fg: var(--text-primary);
   --md-editor-gutter-bg: var(--bg-primary);
   --md-editor-gutter-fg: var(--text-tertiary);
   --md-editor-active-line: var(--bg-secondary);
   --md-editor-caret: var(--primary-color);
-  --md-editor-selection: color-mix(in srgb, var(--primary-color) 25%, transparent);
+  --md-editor-selection: rgba(0, 102, 204, 0.42);
+  --md-editor-selection-match: rgba(214, 137, 0, 0.3);
+  --md-editor-search-match: rgba(214, 137, 0, 0.35);
+  --md-editor-search-match-selected: rgba(255, 120, 0, 0.55);
+  --md-editor-panel-bg: var(--bg-secondary);
+  --md-editor-panel-fg: var(--text-primary);
+  --md-editor-border: var(--border-color);
+}
+
+body.dark-mode .editor-pane {
+  --md-editor-selection: rgba(10, 132, 255, 0.55);
+  --md-editor-selection-match: rgba(255, 200, 60, 0.32);
+  --md-editor-search-match: rgba(255, 200, 60, 0.35);
+  --md-editor-search-match-selected: rgba(255, 150, 40, 0.6);
 }
 
 .editor-instance {
