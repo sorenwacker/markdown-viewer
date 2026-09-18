@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Export the open document as PDF, from the header button or Cmd/Ctrl+P: A4 pages, always light, with mermaid diagrams rendered
+
 ## [1.4.0] - 2026-09-18
 
 ### Added

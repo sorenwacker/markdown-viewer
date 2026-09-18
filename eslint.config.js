@@ -47,7 +47,7 @@ module.exports = [
   {
     // The renderer is delivered as an ES module (renderer.html loads it with
     // type="module"); main/preload and the test/config files stay CommonJS.
-    files: ['renderer.js', 'modules/**/*.js', 'scripts/editor-entry.js'],
+    files: ['renderer.js', 'modules/**/*.js', 'scripts/editor-entry.js', 'print.js'],
     languageOptions: {
       sourceType: 'module',
     },

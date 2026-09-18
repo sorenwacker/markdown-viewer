@@ -18,6 +18,7 @@ import { handleToggleSource } from './modules/source-view.js';
 import {
   handleToggleEdit, handleSave, applyDiskChange, confirmDiscard, loadDiskContent,
 } from './modules/edit-mode.js';
+import { handleExportPdf } from './modules/export.js';
 import { openSearch } from './modules/search.js';
 import './modules/prefs.js';
 
@@ -181,6 +182,12 @@ document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 's' || e.key === 'S')) {
     e.preventDefault();
     handleSave();
+  }
+
+  // Cmd/Ctrl + P: Export as PDF
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'p' || e.key === 'P')) {
+    e.preventDefault();
+    handleExportPdf();
   }
 
   // Cmd/Ctrl + R: Reload file

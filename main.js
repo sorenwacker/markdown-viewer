@@ -612,6 +612,76 @@ ipcMain.handle('confirm-discard', async (event, fileName) => {
   return response === 0;
 });
 
+// How long the export page may take to render before the export is abandoned.
+const EXPORT_RENDER_TIMEOUT_MS = 20000;
+
+// Render a document's HTML in a hidden window and return it as PDF bytes. The
+// window loads print.html, which reports back once diagrams are drawn, so the
+// PDF is never captured mid-render.
+async function renderPdf(html) {
+  const printWindow = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'print-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  try {
+    await printWindow.loadFile('print.html');
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error('The document took too long to render.'));
+      }, EXPORT_RENDER_TIMEOUT_MS);
+      const onReady = () => {
+        cleanup();
+        resolve();
+      };
+      const onFailed = (event, message) => {
+        cleanup();
+        reject(new Error(message));
+      };
+      function cleanup() {
+        clearTimeout(timer);
+        ipcMain.removeListener('print-ready', onReady);
+        ipcMain.removeListener('print-failed', onFailed);
+      }
+      ipcMain.once('print-ready', onReady);
+      ipcMain.once('print-failed', onFailed);
+      printWindow.webContents.send('print-content', html);
+    });
+
+    return await printWindow.webContents.printToPDF({
+      pageSize: 'A4',
+      printBackground: true
+    });
+  } finally {
+    printWindow.destroy();
+  }
+}
+
+// Export the active document as PDF. The renderer supplies the HTML it shows,
+// so unsaved edits are included.
+ipcMain.handle('export-pdf', async (event, filePath, fileName, html) => {
+  const suggested = `${path.basename(fileName, path.extname(fileName))}.pdf`;
+  const { canceled, filePath: target } = await dialog.showSaveDialog(mainWindow, {
+    defaultPath: path.join(path.dirname(filePath), suggested),
+    filters: [{ name: 'PDF', extensions: ['pdf'] }]
+  });
+  if (canceled || !target) return { success: false, canceled: true };
+
+  try {
+    const pdf = await renderPdf(html);
+    await fs.writeFile(target, pdf);
+    return { success: true, filePath: target };
+  } catch (error) {
+    console.error('Error exporting PDF:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Handle resolving a relative link path
 ipcMain.handle('resolve-link', async (event, basePath, linkPath) => {
   try {

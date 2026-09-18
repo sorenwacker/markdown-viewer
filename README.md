@@ -16,6 +16,7 @@ A cross-platform Electron-based markdown viewer for macOS, Windows, and Linux.
 - Edit documents next to a live preview and save with the Save button or Cmd/Ctrl+S (Cmd/Ctrl+E toggles edit mode, see [docs/editing.md](docs/editing.md))
 - View the raw markdown source of a document in-app, toggled per tab (Cmd/Ctrl+Shift+S)
 - Copy the raw markdown source to the clipboard (Cmd/Ctrl+Shift+C)
+- Export the open document as PDF (Cmd/Ctrl+P, see [docs/exporting.md](docs/exporting.md))
 - In-document search (Cmd/Ctrl+F)
 - Mermaid diagram support (ERD, flowcharts, sequence diagrams, etc.)
 - Syntax highlighting for code blocks
@@ -75,6 +76,7 @@ npm run build:linux  # Linux
 |----------|--------|
 | `Cmd/Ctrl + F` | Search in document |
 | `Cmd/Ctrl + E` | Toggle edit mode |
+| `Cmd/Ctrl + P` | Export as PDF |
 | `Cmd/Ctrl + S` | Save the document (edit mode) |
 | `Cmd/Ctrl + Shift + S` | Toggle markdown source view |
 | `Cmd/Ctrl + Shift + C` | Copy markdown source |

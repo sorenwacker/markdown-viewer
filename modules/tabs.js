@@ -2,7 +2,7 @@
 // bar. Distinct from the sidebar Files/Outline panes (see switchSidebarPane in
 // renderer.js).
 import {
-  welcomeScreen, markdownContent, fileInfo, copySourceBtn, sourceToggleBtn, editToggleBtn,
+  welcomeScreen, markdownContent, fileInfo, copySourceBtn, sourceToggleBtn, editToggleBtn, exportPdfBtn,
   outlineContainer, contentWrapper, tabBar, tabBarContent, treeContainer,
 } from './dom.js';
 import { escapeHtml, sanitizeHtml } from './html.js';
@@ -122,6 +122,7 @@ export function switchToTab(tabId) {
   copySourceBtn.style.display = 'flex';
   sourceToggleBtn.style.display = 'flex';
   editToggleBtn.style.display = 'flex';
+  exportPdfBtn.style.display = 'flex';
   resetCopyFeedback();
 
   // Render content in this tab's view mode, then restore its scroll position.
@@ -171,6 +172,7 @@ export async function closeTab(tabId) {
       fileInfo.textContent = 'Markdown Viewer';
       copySourceBtn.style.display = 'none';
       sourceToggleBtn.style.display = 'none';
+      exportPdfBtn.style.display = 'none';
       resetEditModeUI();
       outlineContainer.innerHTML = `
         <div class="tree-empty">
