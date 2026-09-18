@@ -23,6 +23,7 @@ export const reloadBtn = document.getElementById('reloadBtn');
 export const copySourceBtn = document.getElementById('copySourceBtn');
 export const sourceToggleBtn = document.getElementById('sourceToggleBtn');
 export const editToggleBtn = document.getElementById('editToggleBtn');
+export const saveBtn = document.getElementById('saveBtn');
 export const editorPane = document.getElementById('editorPane');
 export const diskChangeBanner = document.getElementById('diskChangeBanner');
 export const diskReloadBtn = document.getElementById('diskReloadBtn');

@@ -100,6 +100,35 @@ test.describe('Edit mode: saving', () => {
     await expect(window.locator('#tabBarContent .tab-item:not(.active) .tab-item-modified')).toHaveCount(0);
   });
 
+  test('the save button appears in edit mode and writes the file', async ({ electronApp, window }) => {
+    const file = tempMarkdownFile('# Title\n');
+    await openFile(electronApp, window, file);
+    await expect(window.locator('#saveBtn')).not.toBeVisible();
+
+    await window.keyboard.press('ControlOrMeta+E');
+    await expect(window.locator('#saveBtn')).toBeVisible();
+    await expect(window.locator('#saveBtn')).toBeDisabled();
+
+    await typeAtEnd(window, 'Button saved');
+    await expect(window.locator('#saveBtn')).toBeEnabled();
+    await window.locator('#saveBtn').click();
+
+    await expect(window.locator('#saveBtn')).toBeDisabled();
+    await expect(window.locator('#fileInfo')).not.toContainText('•');
+    expect(fs.readFileSync(file, 'utf8')).toBe('# Title\nButton saved');
+  });
+
+  test('the save button stays available for unsaved edits outside edit mode', async ({ electronApp, window }) => {
+    await openFile(electronApp, window, tempMarkdownFile('# Title\n'));
+    await window.keyboard.press('ControlOrMeta+E');
+    await typeAtEnd(window, 'draft');
+
+    await window.keyboard.press('ControlOrMeta+E');
+    await expect(window.locator('#editorPane')).not.toBeVisible();
+    await expect(window.locator('#saveBtn')).toBeVisible();
+    await expect(window.locator('#saveBtn')).toBeEnabled();
+  });
+
   test('Cmd/Ctrl+S writes the text to the file and clears the marker', async ({ electronApp, window }) => {
     const file = tempMarkdownFile('# Title\n');
     await openFile(electronApp, window, file);
@@ -211,11 +240,49 @@ test.describe('Edit mode: unsaved changes', () => {
     await typeAtEnd(window, 'unsaved');
     await expect(window.locator('#fileInfo')).toContainText('•');
 
-    await answerDialogs(electronApp, 1); // Cancel
+    await answerDialogs(electronApp, 2); // Cancel
     await electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
-    await window.waitForTimeout(300);
+    await window.waitForTimeout(500);
 
     expect(await electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
+    await expect(window.locator('#fileInfo')).toContainText('•');
+  });
+
+  test('closing the window with Save All writes every modified tab', async ({ electronApp, window }) => {
+    const one = tempMarkdownFile('# One\n', 'one.md');
+    const two = tempMarkdownFile('# Two\n', 'two.md');
+    await openFile(electronApp, window, one);
+    await window.keyboard.press('ControlOrMeta+E');
+    await typeAtEnd(window, 'first edit');
+    await openFile(electronApp, window, two);
+    await window.keyboard.press('ControlOrMeta+E');
+    await typeAtEnd(window, 'second edit');
+
+    await answerDialogs(electronApp, 0); // Save All
+    await electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
+
+    await expect.poll(
+      () => electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length),
+      { timeout: 10000 }
+    ).toBe(0);
+    expect(fs.readFileSync(one, 'utf8')).toBe('# One\nfirst edit');
+    expect(fs.readFileSync(two, 'utf8')).toBe('# Two\nsecond edit');
+  });
+
+  test('closing the window with Don\'t Save leaves the files untouched', async ({ electronApp, window }) => {
+    const file = tempMarkdownFile('# Title\n');
+    await openFile(electronApp, window, file);
+    await window.keyboard.press('ControlOrMeta+E');
+    await typeAtEnd(window, 'discarded');
+
+    await answerDialogs(electronApp, 1); // Don't Save
+    await electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
+
+    await expect.poll(
+      () => electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length),
+      { timeout: 10000 }
+    ).toBe(0);
+    expect(fs.readFileSync(file, 'utf8')).toBe('# Title\n');
   });
 });
 

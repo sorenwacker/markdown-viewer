@@ -3,7 +3,7 @@
 // handling of changes on disk. Behavior is specified in docs/editing.md.
 import { createMarkdownEditor } from '../vendor/markdown-editor.js';
 import {
-  editToggleBtn, editorPane, contentWrapper, markdownContent, fileInfo, sourceToggleBtn,
+  editToggleBtn, saveBtn, editorPane, contentWrapper, markdownContent, fileInfo, sourceToggleBtn,
   diskChangeBanner, diskReloadBtn, diskKeepBtn,
   saveErrorBanner, saveErrorMessage, saveErrorDismissBtn,
 } from './dom.js';
@@ -53,9 +53,19 @@ export function syncEditMode(tab) {
   }
 
   editToggleBtn.classList.toggle('active', editing);
+  syncSaveButton(tab);
   editToggleBtn.title = editing ? 'Stop Editing (Cmd+E)' : 'Edit Document (Cmd+E)';
   sourceToggleBtn.style.display = editing ? 'none' : 'flex';
   syncBanners(tab);
+}
+
+// The save button is offered while editing or while edits are unsaved, and is
+// enabled only when there is something to write.
+function syncSaveButton(tab) {
+  const offered = !!tab && (tab.editMode || isModified(tab));
+  saveBtn.style.display = offered ? 'flex' : 'none';
+  saveBtn.disabled = !tab || !isModified(tab);
+  saveBtn.style.opacity = saveBtn.disabled ? '0.4' : '1';
 }
 
 function syncBanners(tab) {
@@ -69,6 +79,7 @@ export function resetEditModeUI() {
   contentWrapper.classList.remove('editing');
   editorPane.style.display = 'none';
   editToggleBtn.style.display = 'none';
+  saveBtn.style.display = 'none';
   diskChangeBanner.style.display = 'none';
   saveErrorBanner.style.display = 'none';
 }
@@ -78,6 +89,7 @@ export function resetEditModeUI() {
 export function updateModifiedUI() {
   const tab = getActiveTab();
   if (tab) fileInfo.textContent = fileLabel(tab);
+  syncSaveButton(tab);
   renderTabBar();
 
   const count = [...tabManager.tabs.values()].filter(isModified).length;
@@ -153,6 +165,18 @@ export async function handleSave() {
   if (tab) await saveTab(tab);
 }
 
+// Save every modified tab, for the window-close confirmation. Resolves false if
+// any write failed, leaving those tabs modified and their errors on screen.
+async function saveAllTabs() {
+  let allSaved = true;
+  for (const tab of tabManager.tabs.values()) {
+    if (!(await saveTab(tab))) allSaved = false;
+  }
+  const active = getActiveTab();
+  if (active) syncBanners(active);
+  return allSaved;
+}
+
 // Replace a tab's text with file content, discarding its edits.
 export function loadDiskContent(tab, data) {
   tab.markdown = data.markdown;
@@ -217,6 +241,14 @@ export function disposeEditor(tabId) {
 }
 
 editToggleBtn.addEventListener('click', handleToggleEdit);
+saveBtn.addEventListener('click', handleSave);
+
+// The main process asks for every modified tab to be saved when the window is
+// closing, and closes only once they are written.
+window.electronAPI.onSaveAllRequested(async () => {
+  const saved = await saveAllTabs();
+  await window.electronAPI.saveAllFinished(saved);
+});
 
 diskReloadBtn.addEventListener('click', () => {
   const tab = getActiveTab();

@@ -24,6 +24,58 @@ const openDocuments = new Set();
 // confirmation reads it.
 let unsavedCount = 0;
 
+// Set once the close confirmation is answered, so the repeated close goes
+// through instead of asking again.
+let closeConfirmed = false;
+
+// Whether the pending close came from quitting the app. Cancelling a close also
+// cancels the quit, so a confirmed close has to resume it; on macOS closing the
+// window alone would leave the app running.
+let quitting = false;
+
+// Resolves the renderer's reply to a save-all request.
+let saveAllReply = null;
+
+// Ask what to do with unsaved edits when the window is closing, then close it
+// unless the answer was Cancel or a save failed.
+async function confirmCloseWithUnsavedEdits() {
+  const { response } = await dialog.showMessageBox(mainWindow, {
+    type: 'warning',
+    buttons: ['Save All', "Don't Save", 'Cancel'],
+    defaultId: 0,
+    cancelId: 2,
+    message: unsavedCount === 1
+      ? 'A document has unsaved changes.'
+      : `${unsavedCount} documents have unsaved changes.`,
+    detail: 'Closing the window discards them unless they are saved.'
+  });
+  if (response === 2 || !mainWindow) {
+    quitting = false;
+    return;
+  }
+
+  if (response === 0) {
+    const saved = await new Promise(resolve => {
+      saveAllReply = resolve;
+      mainWindow.webContents.send('save-all-requested');
+    });
+    saveAllReply = null;
+    // A failed write leaves the window open with the error on its tab.
+    if (!saved) {
+      quitting = false;
+      return;
+    }
+  }
+
+  unsavedCount = 0;
+  closeConfirmed = true;
+  if (quitting) {
+    app.quit();
+  } else if (mainWindow) {
+    mainWindow.close();
+  }
+}
+
 // Handle file opening on macOS
 app.on('open-file', (event, filePath) => {
   event.preventDefault();
@@ -144,25 +196,12 @@ function createWindow() {
     });
   }
 
-  // Confirm before discarding unsaved edits. The handler must decide
-  // synchronously, so it uses the synchronous message box.
+  // Confirm before discarding unsaved edits. The close is cancelled while the
+  // answer (and any saving) is awaited, then repeated once it is settled.
   mainWindow.on('close', (event) => {
-    if (unsavedCount === 0) return;
-    const response = dialog.showMessageBoxSync(mainWindow, {
-      type: 'warning',
-      buttons: ['Discard and Close', 'Cancel'],
-      defaultId: 1,
-      cancelId: 1,
-      message: unsavedCount === 1
-        ? 'A document has unsaved changes.'
-        : `${unsavedCount} documents have unsaved changes.`,
-      detail: 'Closing the window discards them.'
-    });
-    if (response === 1) {
-      event.preventDefault();
-    } else {
-      unsavedCount = 0;
-    }
+    if (unsavedCount === 0 || closeConfirmed) return;
+    event.preventDefault();
+    confirmCloseWithUnsavedEdits();
   });
 
   mainWindow.on('closed', () => {
@@ -537,6 +576,11 @@ ipcMain.handle('save-file', async (event, filePath, markdown) => {
   return { success: true, ...parseMarkdown(content, filePath), markdown: content };
 });
 
+// The renderer reports the outcome of a save-all requested at window close.
+ipcMain.handle('save-all-finished', async (event, saved) => {
+  if (saveAllReply) saveAllReply(!!saved);
+});
+
 // The renderer reports how many tabs have unsaved edits.
 ipcMain.handle('set-unsaved-count', async (event, count) => {
   unsavedCount = Number(count) || 0;
@@ -647,6 +691,10 @@ async function buildFileTree(dirPath, depth = 0, maxDepth = 3) {
     return [];
   }
 }
+
+app.on('before-quit', () => {
+  quitting = true;
+});
 
 app.whenReady().then(() => {
   if (headless && app.dock) app.dock.hide();

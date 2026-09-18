@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0-rc.4] - 2026-09-18
+
+### Added
+- Save button in the header, shown while editing or while changes are unsaved
+
+### Changed
+- Closing the window or quitting with unsaved changes now offers Save All, Don't Save, or Cancel; it previously only offered discarding
+
 ## [1.4.0-rc.3] - 2026-09-18
 
 ### Fixed

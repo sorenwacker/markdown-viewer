@@ -11,9 +11,10 @@ exports.test = base.extend({
     });
     await use(electronApp);
     // A test that ends with unsaved edits would otherwise block quitting on the
-    // window-close confirmation; answer it with "discard".
+    // window-close confirmation; answer it with "Don't Save".
     await electronApp.evaluate(({ dialog }) => {
-      dialog.showMessageBoxSync = () => 0;
+      dialog.showMessageBox = async () => ({ response: 1 });
+      dialog.showMessageBoxSync = () => 1;
     }).catch(() => {});
     await electronApp.close();
   },

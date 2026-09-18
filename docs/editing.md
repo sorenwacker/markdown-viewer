@@ -20,7 +20,8 @@ The outline in the sidebar follows the preview.
 
 ## Saving
 
-- `Cmd/Ctrl+S` writes the tab's text to its file. Saving is explicit; there is no autosave.
+- The Save button in the header, or `Cmd/Ctrl+S`, writes the tab's text to its file. Saving is explicit; there is no autosave.
+- The Save button is shown while a tab is in edit mode or has unsaved changes, and is enabled only when there is something to write.
 - A tab whose text differs from the file on disk is modified. Modified tabs show a dot before the file name in the tab bar and in the header.
 - If writing fails (for example, the file is read-only), an error banner is shown until it is dismissed or a later save succeeds, and the tab stays modified.
 
@@ -30,7 +31,7 @@ Unsaved text is never discarded without confirmation:
 
 - **Closing a modified tab** (`Cmd/Ctrl+W` or the tab close button) asks: Save, Don't Save, or Cancel.
 - **Reloading a modified tab** (`Cmd/Ctrl+R`) asks whether to discard the changes and reload from disk.
-- **Closing the window** with modified tabs asks whether to discard all unsaved changes and close.
+- **Closing the window** (or quitting) with modified tabs asks: Save All, Don't Save, or Cancel. Save All writes every modified tab and then closes; if any write fails, the window stays open and the failure is shown on its tab.
 
 ## Changes on disk
 
@@ -47,4 +48,4 @@ The file watcher keeps running while a tab is edited.
 - **Rendering.** `parseMarkdown(content, filePath)` in `main.js` turns text into `{ html, outline }`. Opening a file reads it and calls this function; the `render-markdown` IPC channel calls it for the preview.
 - **Saving.** The `save-file` IPC channel writes the text and returns the parsed result. It only writes to files that are open in a tab, so the channel cannot be used to write arbitrary paths.
 - **Tab state.** A tab holds `markdown` (the content last read from or written to disk), `draft` (the edited text, `null` when there are no edits), and `editMode`. A tab is modified when `draft` is not `null` and differs from `markdown`.
-- **Window close.** The renderer reports the number of modified tabs to the main process, which shows the confirmation on the window `close` event.
+- **Window close.** The renderer reports the number of modified tabs to the main process, which shows the confirmation on the window `close` event. The close is cancelled while the answer is awaited, and on Save All the main process asks the renderer to save every modified tab before closing.
