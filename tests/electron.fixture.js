@@ -14,6 +14,10 @@ exports.test = base.extend({
     const electronApp = await electron.launch({
       args: [path.join(__dirname, '../main.js'), `--user-data-dir=${userDataDir}`],
       env: { ...process.env, MARKDOWN_VIEWER_HEADLESS: headless ? '1' : '0' },
+      // The first launch on a cold CI machine has to page in the whole Electron
+      // binary, with a virus scanner reading it at the same time; the default
+      // 30s is not always enough and fails as "Process failed to launch!".
+      timeout: 120000,
     });
     await use(electronApp);
     // A test that ends with unsaved edits would otherwise block quitting on the

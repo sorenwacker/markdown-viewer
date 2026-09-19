@@ -2,7 +2,9 @@ const { defineConfig } = require('@playwright/test');
 
 module.exports = defineConfig({
   testDir: './tests',
-  timeout: 30000,
+  // Generous: each test launches a real Electron app, and a cold first launch
+  // on CI can take a minute.
+  timeout: 90000,
   retries: 0,
   use: {
     trace: 'on-first-retry',
