@@ -621,10 +621,14 @@ const EXPORT_RENDER_TIMEOUT_MS = 20000;
 async function renderPdf(html) {
   const printWindow = new BrowserWindow({
     show: false,
+    // The window is never shown, so it must be told to paint and not to
+    // throttle: a throttled hidden window can stall before it has rendered.
+    paintWhenInitiallyHidden: true,
     webPreferences: {
       preload: path.join(__dirname, 'print-preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      backgroundThrottling: false
     }
   });
 

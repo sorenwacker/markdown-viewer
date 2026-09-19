@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Electron updated from 39 to 44, plus mermaid, DOMPurify, pdfjs-dist and build tooling; `npm audit` reports no known vulnerabilities (19 before, including a critical one in tar and prototype pollution in mermaid)
+
+### Fixed
+- Tests attached to the app window before it had navigated to the page, which Electron 44 exposed as widespread failures
+
 ## [1.5.0] - 2026-09-18
 
 ### Added
