@@ -21,6 +21,15 @@ async function renderDiagrams(container) {
   return container.querySelectorAll('.mermaid svg').length;
 }
 
+// Resolve once the browser has had a chance to lay the page out: two animation
+// frames where they run, a short timer otherwise.
+function settled() {
+  return Promise.race([
+    new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    new Promise(resolve => setTimeout(resolve, 300))
+  ]);
+}
+
 window.printAPI.onContent(async (_event, html) => {
   const container = document.getElementById('printContent');
   try {
@@ -31,9 +40,10 @@ window.printAPI.onContent(async (_event, html) => {
 
     const diagrams = await renderDiagrams(container);
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
-    // Let the page lay out and paint what was just inserted; printing before
-    // that can capture a page that is still empty.
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    // Let the page lay out what was just inserted; printing before that can
+    // capture a page that is still empty. The export window is hidden, where
+    // animation frames are not guaranteed to run, so a timer backs them up.
+    await settled();
 
     window.printAPI.ready({ diagrams });
   } catch (error) {

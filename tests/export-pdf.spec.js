@@ -31,15 +31,29 @@ async function pdfText(target) {
 
 // Wait for the export to finish writing a PDF that can be read back. A file
 // size threshold would only guess at that; parsing it is the real condition.
-async function waitForFile(target) {
-  await expect.poll(async () => {
-    if (!fs.existsSync(target)) return false;
-    try {
-      return (await pdfText(target)).length > 0;
-    } catch {
-      return false;
-    }
-  }, { timeout: 20000 }).toBe(true);
+async function waitForFile(target, window) {
+  let lastReadError = '';
+  try {
+    await expect.poll(async () => {
+      if (!fs.existsSync(target)) return false;
+      try {
+        return (await pdfText(target)).length > 0;
+      } catch (error) {
+        // Keep the reason: a PDF that cannot be read is not the same failure
+        // as a PDF that was never written.
+        lastReadError = error.message;
+        return false;
+      }
+    }, { timeout: 20000 }).toBe(true);
+  } catch (error) {
+    const banner = window && await window.locator('#exportErrorMessage').textContent().catch(() => '');
+    throw new Error([
+      error.message,
+      `App reported: ${banner || '(no error shown)'}`,
+      `File exists: ${fs.existsSync(target)}`,
+      lastReadError ? `Reading the PDF failed: ${lastReadError}` : ''
+    ].filter(Boolean).join('\n'));
+  }
 }
 
 test.describe('Export as PDF', () => {
@@ -55,7 +69,7 @@ test.describe('Export as PDF', () => {
     await expect(window.locator('#exportPdfBtn')).toBeVisible();
     await window.locator('#exportPdfBtn').click();
 
-    await waitForFile(target);
+    await waitForFile(target, window);
     expect(fs.readFileSync(target).subarray(0, 5).toString()).toBe('%PDF-');
     const text = await pdfText(target);
     expect(text).toContain('Exported title');
@@ -69,7 +83,7 @@ test.describe('Export as PDF', () => {
 
     await window.keyboard.press('ControlOrMeta+p');
 
-    await waitForFile(target);
+    await waitForFile(target, window);
   });
 
   test('the save dialog suggests the document name beside the document', async ({ electronApp, window }) => {
@@ -102,7 +116,7 @@ test.describe('Export as PDF', () => {
     await answerSaveDialog(electronApp, target);
 
     await window.locator('#exportPdfBtn').click();
-    await waitForFile(target);
+    await waitForFile(target, window);
 
     // A diagram that was not rendered would leave its mermaid source in the
     // PDF instead of the node labels it draws.
@@ -119,7 +133,7 @@ test.describe('Export as PDF', () => {
     await answerSaveDialog(electronApp, target);
 
     await window.locator('#exportPdfBtn').click();
-    await waitForFile(target);
+    await waitForFile(target, window);
 
     expect(await pdfText(target)).toContain('Dark');
   });
@@ -143,7 +157,7 @@ test.describe('Export as PDF', () => {
     await answerSaveDialog(electronApp, target);
 
     await window.locator('#exportPdfBtn').click();
-    await waitForFile(target);
+    await waitForFile(target, window);
 
     expect(await pdfText(target)).toContain('Unsaved section');
   });
