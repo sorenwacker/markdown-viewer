@@ -4,6 +4,7 @@
 // The sanitizer is the main window's, so both insert document HTML under the
 // same rules.
 import { sanitizeHtml } from './modules/html.js';
+import { addListMarkers } from './modules/list-markers.js';
 
 // Render any mermaid diagrams and return how many were drawn.
 async function renderDiagrams(container) {
@@ -34,6 +35,7 @@ window.printAPI.onContent(async (_event, html) => {
   const container = document.getElementById('printContent');
   try {
     container.innerHTML = sanitizeHtml(html);
+    addListMarkers(container);
 
     // The table width toggle is a control of the main window, not content.
     container.querySelectorAll('.table-toggle').forEach(button => button.remove());

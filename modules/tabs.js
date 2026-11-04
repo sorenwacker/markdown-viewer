@@ -11,6 +11,7 @@ import {
   setupTableToggles, renderMermaidDiagrams, renderOutline, setupLinkInterception,
 } from './view.js';
 import { resetCopyFeedback } from './copy.js';
+import { addListMarkers } from './list-markers.js';
 import { updateSourceToggleUI } from './source-view.js';
 import {
   syncEditMode, resolveBeforeClose, disposeEditor, resetEditModeUI, updateModifiedUI,
@@ -35,6 +36,7 @@ export function renderActiveTabContent(tab) {
     markdownContent.querySelector('.markdown-source code').textContent = currentText(tab) ?? '';
   } else {
     markdownContent.innerHTML = sanitizeHtml(tab.html);
+    addListMarkers(markdownContent);
     setupTableToggles();
     renderMermaidDiagrams();
     setupLinkInterception();
