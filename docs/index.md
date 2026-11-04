@@ -24,3 +24,7 @@ A cross-platform Electron-based markdown viewer for macOS, Windows, and Linux.
 - Embedded images: external (`http`/`https`), `data:`, and local files.
 - File browser, document outline, recent documents, and live file watching.
 - Rendered HTML is sanitized with DOMPurify before display.
+
+## Selecting and copying rendered text
+
+List markers in the rendered view are part of the document text, not the browser's `::marker` pseudo-elements, which Chromium neither highlights in a selection nor copies. After each render, every list item gets a leading `<span class="list-marker">` holding `•` for unordered lists or `N.` for ordered lists, honouring an explicit `start` value. Selecting a list therefore highlights its bullets and numbers with the item text, and copying the selection includes them. Task-list items (those starting with a checkbox) get no marker; the checkbox is their marker. The native markers are turned off in CSS and the spans are laid out with a hanging indent, so nested lists keep their indentation. PDF export runs the same pass. The pass lives in `modules/list-markers.js`.

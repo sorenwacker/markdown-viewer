@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Selecting rendered lists now highlights and copies their bullets and numbers, which are inserted as text instead of drawn as browser markers
+
 ### Changed
 - Electron updated from 39 to 44, plus mermaid, DOMPurify, pdfjs-dist and build tooling; `npm audit` reports no known vulnerabilities (19 before, including a critical one in tar and prototype pollution in mermaid)
 

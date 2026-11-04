@@ -202,6 +202,18 @@
 .markdown-content li {
   margin-bottom: 0.5em;
   line-height: 1.7;
+  list-style: none;
+  position: relative;
+}
+
+/* Text markers inserted by modules/list-markers.js, hung in the list padding
+   where the native marker used to be, so they are selectable and copyable. */
+.markdown-content .list-marker {
+  position: absolute;
+  right: 100%;
+  padding-right: 0.5em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .markdown-content code {
