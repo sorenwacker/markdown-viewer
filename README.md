@@ -61,6 +61,8 @@ npm run build:win    # Windows
 npm run build:linux  # Linux
 ```
 
+Install a macOS build into `/Applications` with `make build install`. The install step quits a running Markdown Viewer and removes the previously installed app before copying the new one, so the new build replaces the old one rather than being copied inside its bundle.
+
 ## Usage
 
 ### Opening Files
