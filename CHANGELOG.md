@@ -7,15 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-11-05
+
 ### Fixed
-- `make install` replaces the installed app; it used to copy the new build inside the existing bundle and leave the old app running from `/Applications`
 - Selecting rendered lists now highlights and copies their bullets and numbers, which are inserted as text instead of drawn as browser markers
+- `make install` replaces the installed app; it used to copy the new build inside the existing bundle and leave the old app running from `/Applications`
+- Tests attached to the app window before it had navigated to the page, which Electron 44 exposed as widespread failures
 
 ### Changed
 - Electron updated from 39 to 44, plus mermaid, DOMPurify, pdfjs-dist and build tooling; `npm audit` reports no known vulnerabilities (19 before, including a critical one in tar and prototype pollution in mermaid)
-
-### Fixed
-- Tests attached to the app window before it had navigated to the page, which Electron 44 exposed as widespread failures
 
 ## [1.5.0] - 2026-09-18
 
@@ -99,6 +99,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sidebar with file tree navigation
 - Cross-platform support (macOS, Windows, Linux)
 
-[Unreleased]: https://github.com/sorenwacker/markdown-viewer/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/sorenwacker/markdown-viewer/compare/v1.5.1...HEAD
 [1.1.0]: https://github.com/sorenwacker/markdown-viewer/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/sorenwacker/markdown-viewer/releases/tag/v1.0.0
