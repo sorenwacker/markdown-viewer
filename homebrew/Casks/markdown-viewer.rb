@@ -1,6 +1,6 @@
 cask "markdown-viewer" do
-  version "1.5.0"
-  sha256 "de22da5116960cb36bce05b1f5aaca873e9419ae525ec6b7773b0ed0679745ca"
+  version "1.5.1"
+  sha256 "99047c3ac16b48f692a5f395bcd9a7878348b88cf2f57dbd8704208ff99fc103"
 
   url "https://github.com/sorenwacker/markdown-viewer/releases/download/v#{version}/markdown-viewer-#{version}-arm64.zip"
   name "Markdown Viewer"
