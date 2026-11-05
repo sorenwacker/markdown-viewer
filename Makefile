@@ -52,7 +52,9 @@ dmg: build
 # Install to Applications folder
 install:
 	@echo "Installing Markdown Viewer to /Applications..."
-	@cp -R "dist/mac-arm64/Markdown Viewer.app" "/Applications/Markdown Viewer.app"
+	@osascript -e 'quit app "Markdown Viewer"' 2>/dev/null || true
+	@rm -rf "/Applications/Markdown Viewer.app"
+	@cp -R "dist/mac-arm64/Markdown Viewer.app" /Applications/
 	@echo "Installed successfully"
 	@echo ""
 	@echo "Refreshing Launch Services database..."

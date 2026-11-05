@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- `make install` replaces the installed app; it used to copy the new build inside the existing bundle and leave the old app running from `/Applications`
 - Selecting rendered lists now highlights and copies their bullets and numbers, which are inserted as text instead of drawn as browser markers
 
 ### Changed
