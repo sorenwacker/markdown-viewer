@@ -14,7 +14,7 @@ async function renderDiagrams(container) {
   mermaid.initialize({
     startOnLoad: false,
     theme: 'default',
-    securityLevel: 'loose',
+    securityLevel: 'strict',
     flowchart: { useMaxWidth: true, htmlLabels: true },
     er: { useMaxWidth: true }
   });

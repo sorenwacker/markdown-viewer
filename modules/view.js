@@ -20,7 +20,9 @@ export async function renderMermaidDiagrams() {
   mermaid.initialize({
     startOnLoad: false,
     theme: isDarkMode ? 'dark' : 'default',
-    securityLevel: 'loose',
+    // Documents are untrusted: 'strict' encodes HTML in labels and disables
+    // click directives, which could otherwise navigate the app window.
+    securityLevel: 'strict',
     flowchart: {
       useMaxWidth: true,
       htmlLabels: true
@@ -83,24 +85,21 @@ export function renderOutline(outline) {
     return;
   }
 
-  let outlineHtml = '';
-
-  outline.forEach(item => {
-    outlineHtml += `
-      <div class="outline-item level-${item.level}" data-id="${item.id}">
-        ${item.text}
-      </div>
-    `;
-  });
-
-  outlineContainer.innerHTML = outlineHtml;
+  // Built as nodes, not HTML: heading text comes from the document.
+  outlineContainer.replaceChildren(...outline.map(item => {
+    const div = document.createElement('div');
+    div.className = `outline-item level-${Number(item.level) || 1}`;
+    div.dataset.id = item.id;
+    div.textContent = item.text;
+    return div;
+  }));
 
   // Add click handlers
   const outlineItems = outlineContainer.querySelectorAll('.outline-item');
   outlineItems.forEach(item => {
     item.addEventListener('click', () => {
       const id = item.getAttribute('data-id');
-      const targetElement = document.getElementById(id);
+      const targetElement = findHeading(id);
       if (targetElement) {
         scrollToElement(targetElement);
 
@@ -112,48 +111,82 @@ export function renderOutline(outline) {
   });
 }
 
-// Setup link interception on markdown content
+// Find an element by id inside the document only, so a heading cannot be
+// confused with an app element that has the same id.
+function findHeading(id) {
+  return id ? markdownContent.querySelector(`[id="${window.CSS.escape(id)}"]`) : null;
+}
+
+// Links are handled by one delegated listener, so anchors added after render
+// (for example inside mermaid SVGs) are covered too.
+let linkInterceptionInstalled = false;
+
 export function setupLinkInterception() {
-  const links = markdownContent.querySelectorAll('a');
-  links.forEach(link => {
-    link.addEventListener('click', handleLinkClick);
-  });
+  if (linkInterceptionInstalled) return;
+  linkInterceptionInstalled = true;
+  markdownContent.addEventListener('click', handleLinkClick);
+}
+
+// Split a relative link into a decoded path and a fragment.
+function splitRelativeLink(href) {
+  const hashIndex = href.indexOf('#');
+  const rawPath = hashIndex === -1 ? href : href.slice(0, hashIndex);
+  const fragment = hashIndex === -1 ? '' : href.slice(hashIndex + 1);
+  let decodedPath = rawPath;
+  try {
+    decodedPath = decodeURIComponent(rawPath);
+  } catch {
+    // Keep the raw path when it is not valid percent-encoding.
+  }
+  return { path: decodedPath, fragment };
+}
+
+function scrollToFragment(fragment) {
+  if (!fragment) return;
+  let id = fragment;
+  try {
+    id = decodeURIComponent(fragment);
+  } catch {
+    // Use the fragment as written.
+  }
+  const target = findHeading(id);
+  if (target) scrollToElement(target);
 }
 
 // Handle link clicks
 async function handleLinkClick(e) {
-  const href = e.currentTarget.getAttribute('href');
+  const link = e.target.closest('a');
+  if (!link || !markdownContent.contains(link)) return;
+  const href = link.getAttribute('href') ?? link.getAttribute('xlink:href');
   if (!href) return;
+  e.preventDefault();
 
-  // Handle anchor links (scroll within document)
+  // Anchor links scroll within the document
   if (href.startsWith('#')) {
-    e.preventDefault();
-    const targetId = href.slice(1);
-    const targetElement = document.getElementById(targetId);
-    if (targetElement) {
-      scrollToElement(targetElement);
-    }
+    scrollToFragment(href.slice(1));
     return;
   }
 
-  // Handle external URLs
-  if (href.startsWith('http://') || href.startsWith('https://')) {
-    e.preventDefault();
+  // Links with a scheme (http:, mailto:, ...) go to the main process, which
+  // decides what may be opened.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(href) && !/^[a-z]:[\\/]/i.test(href)) {
     window.electronAPI.openExternal(href);
     return;
   }
 
-  // Handle relative links
-  if (state.currentFile) {
-    e.preventDefault();
-    const result = await window.electronAPI.resolveLink(state.currentFile, href);
+  if (!state.currentFile) return;
+  const { path: linkPath, fragment } = splitRelativeLink(href);
+  if (!linkPath) {
+    scrollToFragment(fragment);
+    return;
+  }
+  const result = await window.electronAPI.resolveLink(state.currentFile, linkPath);
+  if (!result.success || !result.exists) return;
 
-    if (result.success && result.exists && result.isMarkdown) {
-      // Open markdown file in new tab
-      await createTab(result.resolvedPath);
-    } else if (result.success && result.exists) {
-      // Open non-markdown file with system default
-      window.electronAPI.openExternal(`file://${result.resolvedPath}`);
-    }
+  if (result.isMarkdown) {
+    await createTab(result.resolvedPath);
+    scrollToFragment(fragment);
+  } else {
+    window.electronAPI.openPath(result.resolvedPath);
   }
 }

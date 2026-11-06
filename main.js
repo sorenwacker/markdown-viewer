@@ -33,6 +33,12 @@ let closeConfirmed = false;
 // window alone would leave the app running.
 let quitting = false;
 
+const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd'];
+
+function isMarkdownPath(filePath) {
+  return MARKDOWN_EXTENSIONS.includes(path.extname(filePath).toLowerCase());
+}
+
 // Resolves the renderer's reply to a save-all request.
 let saveAllReply = null;
 
@@ -165,6 +171,10 @@ function createMenu() {
 }
 
 function createWindow() {
+  // A previous window's answered close prompt must not carry over to this one.
+  closeConfirmed = false;
+  quitting = false;
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -180,6 +190,11 @@ function createWindow() {
   });
 
   mainWindow.loadFile('renderer.html');
+
+  // The window holds the preload API, so it must never navigate away from the
+  // app page or open child windows; links are routed through the renderer.
+  mainWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 
   // Handle file opening from command line (Windows/Linux)
   if (process.platform !== 'darwin' && process.argv.length >= 2) {
@@ -363,8 +378,9 @@ function parseMarkdown(content, filePath) {
       }
 
       // Handle mermaid code blocks specially
+      // Escaped like other code; mermaid entity-decodes the text before parsing.
       if (codeLang === 'mermaid') {
-        return `<div class="mermaid">${codeText}</div>\n`;
+        return `<div class="mermaid">${escapeAttribute(codeText)}</div>\n`;
       }
 
       // Default code block rendering
@@ -523,10 +539,37 @@ ipcMain.handle('open-external', async (event, url) => {
   } catch {
     return;
   }
-  if (!['http:', 'https:', 'mailto:', 'file:'].includes(parsed.protocol)) {
+  // Local files go through open-path, which refuses executable types.
+  if (!['http:', 'https:', 'mailto:'].includes(parsed.protocol)) {
     return;
   }
-  await shell.openExternal(url);
+  await shell.openExternal(parsed.href);
+});
+
+// File types the OS would run rather than open. A link in an untrusted
+// document must not be able to launch a program with one click.
+const EXECUTABLE_EXTENSIONS = new Set([
+  '.app', '.appimage', '.bat', '.cmd', '.com', '.command', '.cpl', '.desktop',
+  '.exe', '.hta', '.jar', '.js', '.jse', '.lnk', '.msc', '.msi', '.msp', '.pif',
+  '.ps1', '.reg', '.run', '.scr', '.sh', '.terminal', '.url', '.vbe', '.vbs',
+  '.workflow', '.ws', '.wsf', '.wsh'
+]);
+
+// Open a linked local file with its default application. Returns false when
+// the target is missing, not a regular file, or executable.
+ipcMain.handle('open-path', async (event, filePath) => {
+  if (typeof filePath !== 'string') return false;
+  const resolved = path.resolve(filePath);
+  if (EXECUTABLE_EXTENSIONS.has(path.extname(resolved).toLowerCase())) return false;
+  let stat;
+  try {
+    stat = await fs.stat(resolved);
+  } catch {
+    return false;
+  }
+  if (!stat.isFile()) return false;
+  if (process.platform !== 'win32' && (stat.mode & 0o111) !== 0) return false;
+  return (await shell.openPath(resolved)) === '';
 });
 
 // Write text to the system clipboard. The clipboard lives in the main process,
@@ -539,6 +582,11 @@ ipcMain.handle('copy-to-clipboard', async (event, text) => {
 
 // Handle opening a file in a new tab (returns parsed data without sending to renderer)
 ipcMain.handle('open-file-in-tab', async (event, filePath) => {
+  // Opening a path registers it as writable for save-file, so only markdown
+  // files qualify; otherwise any file could be read and overwritten.
+  if (typeof filePath !== 'string' || !isMarkdownPath(filePath)) {
+    return { success: false, error: 'Only markdown files can be opened in a tab.' };
+  }
   try {
     const data = await parseMarkdownFile(filePath);
     openDocuments.add(filePath);
@@ -700,7 +748,7 @@ ipcMain.handle('resolve-link', async (event, basePath, linkPath) => {
 
     // Check if it's a markdown file
     const ext = path.extname(resolvedPath).toLowerCase();
-    const isMarkdown = ['.md', '.markdown', '.mdown', '.mkd'].includes(ext);
+    const isMarkdown = MARKDOWN_EXTENSIONS.includes(ext);
 
     return {
       success: true,
@@ -741,7 +789,7 @@ async function buildFileTree(dirPath, depth = 0, maxDepth = 3) {
       } else if (entry.isFile()) {
         // Only include markdown files
         const ext = path.extname(entry.name).toLowerCase();
-        if (['.md', '.markdown', '.mdown', '.mkd'].includes(ext)) {
+        if (MARKDOWN_EXTENSIONS.includes(ext)) {
           tree.push({
             name: entry.name,
             path: fullPath,
