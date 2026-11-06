@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onLoadError: (callback) => ipcRenderer.on('load-error', callback),
   onFileChanged: (callback) => ipcRenderer.on('file-changed', callback),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  openPath: (filePath) => ipcRenderer.invoke('open-path', filePath),
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
   // Tab support
   openFileInTab: (filePath) => ipcRenderer.invoke('open-file-in-tab', filePath),
