@@ -581,6 +581,22 @@ ipcMain.handle('copy-to-clipboard', async (event, text) => {
 });
 
 // Handle opening a file in a new tab (returns parsed data without sending to renderer)
+// Returns the subset of paths that still exist, so the renderer can drop
+// recent-document entries whose file was deleted or moved.
+ipcMain.handle('filter-existing-paths', async (event, paths) => {
+  if (!Array.isArray(paths)) return [];
+  const checks = await Promise.all(paths.map(async (p) => {
+    if (typeof p !== 'string') return false;
+    try {
+      await fs.access(p);
+      return true;
+    } catch (_e) {
+      return false;
+    }
+  }));
+  return paths.filter((_p, i) => checks[i]);
+});
+
 ipcMain.handle('open-file-in-tab', async (event, filePath) => {
   // Opening a path registers it as writable for save-file, so only markdown
   // files qualify; otherwise any file could be read and overwritten.
