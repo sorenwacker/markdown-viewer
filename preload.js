@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
   // Tab support
   openFileInTab: (filePath) => ipcRenderer.invoke('open-file-in-tab', filePath),
+  filterExistingPaths: (paths) => ipcRenderer.invoke('filter-existing-paths', paths),
   closeTab: (filePath) => ipcRenderer.invoke('close-tab', filePath),
   resolveLink: (basePath, linkPath) => ipcRenderer.invoke('resolve-link', basePath, linkPath),
   // Edit mode
