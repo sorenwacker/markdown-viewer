@@ -62,8 +62,19 @@ function getDirectoryPath(filePath, maxLength = 35) {
   return '...' + dir.slice(-(maxLength - 3));
 }
 
-export function renderRecentDocuments() {
+// Drop entries whose file no longer exists and persist the shorter list.
+async function pruneMissingDocuments() {
   const recent = getRecentDocuments();
+  const existing = new Set(await window.electronAPI.filterExistingPaths(recent.map(doc => doc.path)));
+  const kept = recent.filter(doc => existing.has(doc.path));
+  if (kept.length !== recent.length) saveRecentDocuments(kept);
+  return kept;
+}
+
+export async function renderRecentDocuments() {
+  const recent = await pruneMissingDocuments();
+  // A folder may have been opened while the existence check was running.
+  if (state.currentFolder) return;
 
   if (recent.length === 0) {
     treeContainer.innerHTML = `
@@ -107,6 +118,11 @@ export function renderRecentDocuments() {
       if (e.target.closest('.recent-doc-remove')) return;
 
       const path = item.getAttribute('data-path');
+      const [exists] = await window.electronAPI.filterExistingPaths([path]);
+      if (!exists) {
+        removeFromRecentDocuments(path);
+        return;
+      }
       await createTab(path);
     });
   });
