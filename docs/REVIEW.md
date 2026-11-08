@@ -93,6 +93,8 @@ buildFileTree catches every error and returns `[]` (lines 763-766). The try/catc
 
 **Fix:** Let buildFileTree throw at the top level (depth 0) and swallow errors only for subdirectories, or stat the folder in the handler before building the tree.
 
+**Status:** fixed
+
 ### Heading lookups use document.getElementById and can collide with app element IDs
 
 `modules/view.js:103` - correctness
@@ -101,6 +103,8 @@ Outline clicks (`document.getElementById(id)`) and anchor links (`document.getEl
 
 **Fix:** Scope the lookup to the document content: markdownContent.querySelector(`#${CSS.escape(id)}`).
 
+**Status:** fixed
+
 ### createTab has a check-then-await race that creates duplicate tabs
 
 `modules/tabs.js:61` - correctness
@@ -108,6 +112,8 @@ Outline clicks (`document.getElementById(id)`) and anchor links (`document.getEl
 createTab runs findTabByPath(filePath) and then awaits openFileInTab before registering the tab. Two quick calls for the same path (two clicks on a tree item or recent doc, or a link click during a tree click) both pass the duplicate check and create two tabs for one file. Those two tabs then have independent drafts, and the main-process watcher is released when either one closes.
 
 **Fix:** Track in-flight opens in a Map<filePath, Promise> and return the pending promise, or re-check findTabByPath after the await.
+
+**Status:** fixed
 
 ## Appendix: unverified notes
 

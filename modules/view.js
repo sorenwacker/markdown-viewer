@@ -4,6 +4,7 @@
 import { markdownContent, outlineContainer, contentWrapper } from './dom.js';
 import { state } from './state.js';
 import { createTab } from './tabs.js';
+import { findInContent } from './content-lookup.js';
 
 // Render mermaid diagrams
 export async function renderMermaidDiagrams() {
@@ -49,7 +50,8 @@ export function setupTableToggles() {
     button.addEventListener('click', (e) => {
       e.stopPropagation();
       const tableId = button.getAttribute('data-table-id');
-      const wrapper = document.getElementById(`table-wrapper-${tableId}`);
+      const wrapper = findInContent(markdownContent, `table-wrapper-${tableId}`);
+      if (!wrapper) return;
 
       if (wrapper.classList.contains('full-width')) {
         wrapper.classList.remove('full-width');
@@ -114,7 +116,7 @@ export function renderOutline(outline) {
 // Find an element by id inside the document only, so a heading cannot be
 // confused with an app element that has the same id.
 function findHeading(id) {
-  return id ? markdownContent.querySelector(`[id="${window.CSS.escape(id)}"]`) : null;
+  return findInContent(markdownContent, id);
 }
 
 // Links are handled by one delegated listener, so anchors added after render

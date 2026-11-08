@@ -39,7 +39,9 @@ test.describe('Recent documents pruning', () => {
     await window.waitForLoadState('domcontentloaded');
     await window.locator('#filesTab').click();
 
-    await expect(window.locator(`.recent-doc-item[data-path="${kept}"]`)).toBeVisible();
+    // JSON quoting doubles the backslashes of Windows paths, which CSS would
+    // otherwise read as escapes
+    await expect(window.locator(`.recent-doc-item[data-path=${JSON.stringify(kept)}]`)).toBeVisible();
     await expect(window.locator('.recent-doc-item')).toHaveCount(1);
     const stored = await window.evaluate(() => JSON.parse(localStorage.getItem('recentDocuments')));
     expect(stored.map(d => d.path)).toEqual([kept]);

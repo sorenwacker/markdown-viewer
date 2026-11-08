@@ -4,6 +4,7 @@ const { pathToFileURL } = require('url');
 const fs = require('fs').promises;
 const fsSync = require('fs');
 const { Marked } = require('marked');
+const { buildFileTree, MARKDOWN_EXTENSIONS } = require('./file-tree');
 
 let mainWindow;
 let fileToOpen = null;
@@ -32,8 +33,6 @@ let closeConfirmed = false;
 // cancels the quit, so a confirmed close has to resume it; on macOS closing the
 // window alone would leave the app running.
 let quitting = false;
-
-const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd'];
 
 function isMarkdownPath(filePath) {
   return MARKDOWN_EXTENSIONS.includes(path.extname(filePath).toLowerCase());
@@ -509,9 +508,13 @@ ipcMain.handle('open-folder', async () => {
 
   if (!result.canceled && result.filePaths.length > 0) {
     const folderPath = result.filePaths[0];
-    const fileTree = await buildFileTree(folderPath);
-    const folderName = path.basename(folderPath);
-    return { success: true, path: folderPath, tree: fileTree, name: folderName };
+    try {
+      const fileTree = await buildFileTree(folderPath);
+      const folderName = path.basename(folderPath);
+      return { success: true, path: folderPath, tree: fileTree, name: folderName };
+    } catch (error) {
+      console.error('Error opening folder:', error);
+    }
   }
   return { success: false };
 });
@@ -777,58 +780,6 @@ ipcMain.handle('resolve-link', async (event, basePath, linkPath) => {
     return { success: false, error: error.message };
   }
 });
-
-// Build file tree recursively
-async function buildFileTree(dirPath, depth = 0, maxDepth = 3) {
-  if (depth > maxDepth) return [];
-
-  try {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    const tree = [];
-
-    for (const entry of entries) {
-      // Skip hidden files and common ignore patterns
-      if (entry.name.startsWith('.') || entry.name === 'node_modules') {
-        continue;
-      }
-
-      const fullPath = path.join(dirPath, entry.name);
-
-      if (entry.isDirectory()) {
-        const children = await buildFileTree(fullPath, depth + 1, maxDepth);
-        tree.push({
-          name: entry.name,
-          path: fullPath,
-          type: 'folder',
-          children: children
-        });
-      } else if (entry.isFile()) {
-        // Only include markdown files
-        const ext = path.extname(entry.name).toLowerCase();
-        if (MARKDOWN_EXTENSIONS.includes(ext)) {
-          tree.push({
-            name: entry.name,
-            path: fullPath,
-            type: 'file'
-          });
-        }
-      }
-    }
-
-    // Sort: folders first, then files, both alphabetically
-    tree.sort((a, b) => {
-      if (a.type === b.type) {
-        return a.name.localeCompare(b.name);
-      }
-      return a.type === 'folder' ? -1 : 1;
-    });
-
-    return tree;
-  } catch (error) {
-    console.error('Error building file tree:', error);
-    return [];
-  }
-}
 
 app.on('before-quit', () => {
   quitting = true;

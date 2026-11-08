@@ -11,6 +11,7 @@ import {
   setupTableToggles, renderMermaidDiagrams, renderOutline, setupLinkInterception,
 } from './view.js';
 import { resetCopyFeedback } from './copy.js';
+import { createSingleFlight } from './single-flight.js';
 import { addListMarkers } from './list-markers.js';
 import { updateSourceToggleUI } from './source-view.js';
 import {
@@ -57,8 +58,17 @@ export function findTabByPath(filePath) {
   return null;
 }
 
+// Opens still waiting for the file, keyed by path. A second createTab for the
+// same path while the first is reading would otherwise pass the duplicate check
+// too and open the file in two tabs.
+const openTabOnce = createSingleFlight();
+
 // Create a new tab
-export async function createTab(filePath, data = null) {
+export function createTab(filePath, data = null) {
+  return openTabOnce(filePath, () => openTab(filePath, data));
+}
+
+async function openTab(filePath, data) {
   // Check if tab already exists for this file
   const existingTabId = findTabByPath(filePath);
   if (existingTabId) {
