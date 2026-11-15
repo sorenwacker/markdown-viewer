@@ -2,7 +2,13 @@ name: markdown-viewer
 # The version is read from package.json during the build (see override-build),
 # so a release only has to bump it in one place.
 adopt-info: markdown-viewer
+title: Markdown Viewer
 summary: A cross-platform markdown viewer
+license: MIT
+website: https://github.com/sorenwacker/markdown-viewer
+source-code: https://github.com/sorenwacker/markdown-viewer
+issues: https://github.com/sorenwacker/markdown-viewer/issues
+contact: https://github.com/sorenwacker/markdown-viewer/issues
 description: |
   A beautiful way to read and navigate your markdown files.
   Features include in-document search, outline navigation,
