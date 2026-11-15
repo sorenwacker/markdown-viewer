@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- The Snap build, which had failed on every release since 1.2.0: it now builds on core24 with Node 22 from the node snap, installs from the lockfile, takes its version from package.json instead of a hard-coded one, and runs Electron without the setuid sandbox that strict confinement blocks
+
 ## [1.5.1] - 2026-11-05
 
 ### Fixed

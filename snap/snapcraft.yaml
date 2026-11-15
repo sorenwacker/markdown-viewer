@@ -1,43 +1,57 @@
 name: markdown-viewer
-version: '1.5.0'
+# The version is read from package.json during the build (see override-build),
+# so a release only has to bump it in one place.
+adopt-info: markdown-viewer
 summary: A cross-platform markdown viewer
 description: |
   A beautiful way to read and navigate your markdown files.
   Features include in-document search, outline navigation,
   mermaid diagram support, dark mode, and file watching.
 
-base: core22
+base: core24
 confinement: strict
 grade: stable
 icon: snap/gui/icon.png
 
+platforms:
+  amd64:
+
 apps:
   markdown-viewer:
-    command: markdown-viewer
-    desktop: usr/share/applications/markdown-viewer.desktop
+    # Chromium's setuid sandbox cannot start inside a strictly confined snap;
+    # the snap confinement itself is the sandbox. The desktop entry comes from
+    # snap/gui/markdown-viewer.desktop, which snapcraft picks up by app name.
+    command: markdown-viewer --no-sandbox
     extensions: [gnome]
     plugs:
       - home
       - removable-media
       - network
+      - browser-support
+    environment:
+      TMPDIR: $XDG_RUNTIME_DIR
 
 parts:
   markdown-viewer:
-    plugin: dump
+    plugin: nil
     source: .
-    build-packages:
-      - npm
-      - nodejs
+    # The Ubuntu archive's nodejs is far too old for electron-builder
+    # (core22 shipped Node 12); the node snap tracks the LTS the app targets.
+    build-snaps:
+      - node/22/stable
     override-build: |
-      npm install
+      npm ci
       npm run bundle:editor
-      npx electron-builder --linux dir
-      cp -r dist/linux-*-unpacked/* $SNAPCRAFT_PART_INSTALL/
+      npx electron-builder --linux dir --publish never
+      cp -r dist/linux*-unpacked/. "$CRAFT_PART_INSTALL/"
+      craftctl set version="$(node -p "require('./package.json').version")"
+    # GTK and the rest of the desktop stack come from the gnome extension.
     stage-packages:
-      - libgtk-3-0
-      - libnotify4
       - libnss3
+      - libnspr4
       - libxss1
       - libxtst6
-      - xdg-utils
+      - libnotify4
       - libsecret-1-0
+      - libasound2t64
+      - xdg-utils
