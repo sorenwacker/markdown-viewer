@@ -7,8 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-11-21
+
+### Security
+- Documents are treated as untrusted. Mermaid runs at its strict security level, so diagram labels cannot carry HTML and click directives cannot navigate the app window; the app window can no longer navigate away from its page or open child windows; links to local files open through a check that refuses missing, non-regular and executable files instead of being handed to the system as `file:` URLs; and only markdown files opened this way can later be saved over
+
 ### Fixed
 - The Snap build, which had failed on every release since 1.2.0: it now builds on core24 with Node 22 from the node snap, installs from the lockfile, takes its version from package.json instead of a hard-coded one, and runs Electron without the setuid sandbox that strict confinement blocks
+- Recent documents whose file no longer exists are dropped from the list instead of offered as dead entries
+- An error while navigating to a folder is reported instead of failing silently, and opening a document that is already open switches to its tab instead of opening a second one
+
+### Changed
+- katex, mermaid and other dependencies updated within their semver ranges, with `npm audit` fixes applied
 
 ## [1.5.1] - 2026-11-05
 
